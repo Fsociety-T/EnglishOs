@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { Flame, Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useStreak } from '@/hooks/useStreak'
@@ -129,7 +130,15 @@ export default function AppShell() {
 
         {/* pb-24 on mobile keeps the bottom tab bar from covering content. */}
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-24 lg:px-8 lg:pb-10">
-          <Outlet />
+          {/* Keyed on the path so each screen fades in rather than snapping. */}
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+          >
+            <Outlet />
+          </motion.div>
         </main>
       </div>
 
