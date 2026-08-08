@@ -1,10 +1,259 @@
-import ComingSoon from '@/components/ComingSoon'
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { BookMarked, Clock, Flame, PenLine, Table2, Target, TrendingUp } from 'lucide-react'
+import {
+  ActivityHeatmap,
+  ChartFrame,
+  MagnitudeBars,
+  Sparkline,
+  TrendArea,
+} from '@/components/charts'
+import { Button, Card, EmptyState, StatTile, Spinner } from '@/components/ui'
+import { useAsync } from '@/hooks/useAsync'
+import { computeStreak } from '@/lib/streak'
+import { useRepo } from '@/services/db'
+import { ERROR_TYPE_LABEL } from '@/types'
+import type { ErrorType } from '@/types'
+
+function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
 
 export default function Progress() {
+  const repo = useRepo()
+  const [showTable, setShowTable] = useState(false)
+
+  const { data: stats, loading } = useAsync(() => repo.listDailyStats(), [])
+  const { data: sessions } = useAsync(() => repo.listSessions(), [])
+  const { data: vocabulary } = useAsync(() => repo.listVocabulary(), [])
+
+  const allStats = useMemo(() => stats ?? [], [stats])
+  const allSessions = useMemo(
+    () => [...(sessions ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    [sessions],
+  )
+
+  const streak = computeStreak(allStats)
+
+  const minutesSeries = useMemo(
+    () =>
+      allStats.slice(-30).map((s) => ({
+        label: shortDate(s.day),
+        minutes: s.minutesPracticed,
+      })),
+    [allStats],
+  )
+
+  const scoreSeries = useMemo(
+    () =>
+      allSessions.map((s) => ({
+        label: shortDate(s.createdAt),
+        overall: s.scores.overall,
+        grammar: s.scores.grammar,
+        vocabulary: s.scores.vocabulary,
+        fluency: s.scores.fluency,
+      })),
+    [allSessions],
+  )
+
+  /** Mistakes per 100 words, so a long session does not look worse than a short one. */
+  const errorRateSeries = useMemo(
+    () =>
+      allSessions.map((s) => ({
+        label: shortDate(s.createdAt),
+        rate:
+          s.wordCount > 0 ? Math.round((s.corrections.length / s.wordCount) * 1000) / 10 : 0,
+      })),
+    [allSessions],
+  )
+
+  const errorBreakdown = useMemo(() => {
+    const counts = new Map<ErrorType, number>()
+    for (const session of allSessions) {
+      for (const correction of session.corrections) {
+        counts.set(correction.errorType, (counts.get(correction.errorType) ?? 0) + 1)
+      }
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([type, count]) => ({ label: ERROR_TYPE_LABEL[type], value: count }))
+  }, [allSessions])
+
+  const heatmapDays = useMemo(
+    () => new Map(allStats.map((s) => [s.day, s.minutesPracticed])),
+    [allStats],
+  )
+
+  const totalMinutes = allStats.reduce((sum, s) => sum + s.minutesPracticed, 0)
+  const totalWords = allStats.reduce((sum, s) => sum + s.wordsWritten, 0)
+  const latest = scoreSeries[scoreSeries.length - 1]
+
+  if (loading) return <Spinner label="Loading your progress..." />
+
+  if (allSessions.length === 0 && totalMinutes === 0) {
+    return (
+      <div className="space-y-8">
+        <header>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Progress</h1>
+        </header>
+        <EmptyState
+          icon={<TrendingUp className="size-6" />}
+          title="Nothing to chart yet"
+          body="Once you have practised a few times, this page shows whether your weak areas are actually getting stronger - not just how much you did."
+          action={
+            <Link to="/write">
+              <Button>
+                <PenLine className="size-4" />
+                Do your first session
+              </Button>
+            </Link>
+          }
+        />
+      </div>
+    )
+  }
+
   return (
-    <ComingSoon
-      title="Progress"
-      body="Your activity heatmap, score trends, and proof that your weak grammar areas are getting stronger."
-    />
+    <div className="space-y-8">
+      <header>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Progress</h1>
+        <p className="mt-1 text-sm text-fg-muted">
+          The number that matters most is your mistake rate going down, not your hours going up.
+        </p>
+      </header>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile
+          label="Current streak"
+          value={streak.current}
+          unit={streak.current === 1 ? 'day' : 'days'}
+          tone="warn"
+          icon={<Flame className="size-4" />}
+        />
+        <StatTile
+          label="Best streak"
+          value={streak.best}
+          unit="days"
+          icon={<Target className="size-4" />}
+        />
+        <StatTile
+          label="Total practice"
+          value={totalMinutes >= 60 ? Math.round(totalMinutes / 60) : totalMinutes}
+          unit={totalMinutes >= 60 ? 'hours' : 'min'}
+          tone="cyan"
+          icon={<Clock className="size-4" />}
+        />
+        <StatTile
+          label="Words saved"
+          value={(vocabulary ?? []).length}
+          tone="good"
+          icon={<BookMarked className="size-4" />}
+        />
+      </div>
+
+      <ChartFrame
+        title="When you practise"
+        subtitle="Every square is a day. Darker means more minutes."
+      >
+        <ActivityHeatmap days={heatmapDays} />
+      </ChartFrame>
+
+      {errorRateSeries.length >= 2 && (
+        <ChartFrame
+          title="Mistakes per 100 words"
+          subtitle="This is the line you want going down. It is fair across long and short sessions."
+        >
+          <TrendArea data={errorRateSeries} dataKey="rate" color="var(--color-cyan)" />
+        </ChartFrame>
+      )}
+
+      {scoreSeries.length >= 2 && (
+        <ChartFrame
+          title="Overall score by session"
+          subtitle="Each point is one piece of writing or speaking."
+          action={
+            <Button variant="ghost" onClick={() => setShowTable((v) => !v)} className="px-2 py-1">
+              <Table2 className="size-4" />
+              {showTable ? 'Chart' : 'Table'}
+            </Button>
+          }
+        >
+          {showTable ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="text-fg-faint">
+                  <tr className="border-b border-white/10">
+                    <th className="py-2 pr-4 font-medium">Date</th>
+                    <th className="py-2 pr-4 font-medium">Overall</th>
+                    <th className="py-2 pr-4 font-medium">Grammar</th>
+                    <th className="py-2 pr-4 font-medium">Vocabulary</th>
+                    <th className="py-2 font-medium">Fluency</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scoreSeries.map((row, i) => (
+                    <tr key={i} className="border-b border-white/5">
+                      <td className="py-2 pr-4 text-fg-muted">{row.label}</td>
+                      <td className="py-2 pr-4 font-medium text-fg">{row.overall}</td>
+                      <td className="py-2 pr-4 text-fg-muted">{row.grammar}</td>
+                      <td className="py-2 pr-4 text-fg-muted">{row.vocabulary}</td>
+                      <td className="py-2 text-fg-muted">{row.fluency}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <TrendArea data={scoreSeries} dataKey="overall" />
+          )}
+        </ChartFrame>
+      )}
+
+      {/* Small multiples instead of three lines sharing one axis. */}
+      {scoreSeries.length >= 2 && latest && (
+        <section>
+          <div className="mb-3">
+            <h3 className="font-semibold text-fg">Each skill on its own</h3>
+            <p className="mt-0.5 text-sm text-fg-faint">
+              Shown separately so one weak area cannot hide behind a strong one.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Sparkline data={scoreSeries} dataKey="grammar" title="Grammar" latest={latest.grammar} />
+            <Sparkline
+              data={scoreSeries}
+              dataKey="vocabulary"
+              title="Vocabulary"
+              latest={latest.vocabulary}
+            />
+            <Sparkline data={scoreSeries} dataKey="fluency" title="Fluency" latest={latest.fluency} />
+          </div>
+        </section>
+      )}
+
+      {errorBreakdown.length > 0 && (
+        <ChartFrame
+          title="What you get wrong most"
+          subtitle="Every correction you have received, grouped by type."
+        >
+          <MagnitudeBars data={errorBreakdown} height={Math.max(180, errorBreakdown.length * 34)} />
+        </ChartFrame>
+      )}
+
+      {minutesSeries.length >= 2 && (
+        <ChartFrame title="Minutes practised" subtitle="Last 30 days of activity.">
+          <TrendArea data={minutesSeries} dataKey="minutes" unit="min" color="var(--color-cyan)" />
+        </ChartFrame>
+      )}
+
+      <Card>
+        <p className="text-sm leading-relaxed text-fg-muted">
+          You have written <span className="font-semibold text-fg">{totalWords.toLocaleString()}</span>{' '}
+          words across <span className="font-semibold text-fg">{allSessions.length}</span>{' '}
+          {allSessions.length === 1 ? 'session' : 'sessions'}.
+        </p>
+      </Card>
+    </div>
   )
 }
