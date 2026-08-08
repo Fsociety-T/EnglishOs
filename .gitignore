@@ -1,0 +1,25 @@
+# Dependencies are never installed locally on purpose - the cloud build
+# (GitHub Actions) is what runs `npm ci`. See README.
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+.vite/
+
+# Local env - secrets live in GitHub repository secrets instead
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
