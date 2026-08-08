@@ -1,5 +1,8 @@
 import { Route, Routes } from 'react-router-dom'
 import AppShell from '@/components/layout/AppShell'
+import { Spinner } from '@/components/ui'
+import { useAuth } from '@/hooks/useAuth'
+import Auth from '@/pages/Auth'
 import Dashboard from '@/pages/Dashboard'
 import LessonDetail from '@/pages/LessonDetail'
 import Lessons from '@/pages/Lessons'
@@ -14,6 +17,19 @@ import Vocabulary from '@/pages/Vocabulary'
 import Write from '@/pages/Write'
 
 export default function App() {
+  const { signedIn, loading } = useAuth()
+
+  // Only ever true when the build has cloud credentials; local mode is instant.
+  if (loading) {
+    return (
+      <div className="grid min-h-dvh place-items-center">
+        <Spinner />
+      </div>
+    )
+  }
+
+  if (!signedIn) return <Auth />
+
   return (
     <Routes>
       <Route element={<AppShell />}>

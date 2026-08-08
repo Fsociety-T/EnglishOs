@@ -1,23 +1,17 @@
 import { demoRepo } from './demoRepo'
+import { supabaseRepo } from './supabaseRepo'
+import { cloudConfigured } from './supabaseClient'
 import type { Repository } from './types'
 
 export type * from './types'
+export { cloudConfigured }
 
 /**
  * The only place the app decides where data lives.
- * Phase 10 adds `supabaseRepo` and this returns it whenever credentials exist.
+ * With credentials it syncs to Supabase; without them it stays on this device
+ * and needs no account at all.
  */
-function selectRepository(): Repository {
-  const url = import.meta.env.VITE_SUPABASE_URL
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY
-  if (url && key) {
-    // Phase 10 wires the cloud repository in here.
-    return demoRepo
-  }
-  return demoRepo
-}
-
-export const repo: Repository = selectRepository()
+export const repo: Repository = cloudConfigured ? supabaseRepo : demoRepo
 
 /** Components use this rather than importing an implementation directly. */
 export function useRepo(): Repository {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AlertTriangle, Check, Cloud, Cpu, Download, HardDrive, Upload } from 'lucide-react'
 import { Badge, Button, Card, SectionHeading, Spinner } from '@/components/ui'
 import { useAsync } from '@/hooks/useAsync'
+import { signOut, useAuth } from '@/hooks/useAuth'
 import { ai } from '@/services/ai'
 import { useRepo } from '@/services/db'
 import { CEFR_LEVELS } from '@/types'
@@ -19,6 +20,7 @@ const LEVEL_HINT: Record<CefrLevel, string> = {
 
 export default function Settings() {
   const repo = useRepo()
+  const { email } = useAuth()
   const { data: profile, loading, reload } = useAsync(() => repo.getProfile(), [])
 
   const [name, setName] = useState('')
@@ -181,9 +183,21 @@ export default function Settings() {
               </p>
               <p className="mt-1 text-sm leading-relaxed text-fg-faint">
                 {repo.isCloud
-                  ? 'Everything syncs between your devices automatically.'
+                  ? `Signed in as ${email ?? 'your account'}. Everything syncs between your devices automatically.`
                   : 'Everything is saved in this browser on this device. Export a backup below before clearing your browser data, or to move to another computer.'}
               </p>
+              {repo.isCloud && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await signOut()
+                    window.location.reload()
+                  }}
+                  className="mt-2 text-sm text-fg-faint underline transition hover:text-fg"
+                >
+                  Sign out
+                </button>
+              )}
             </div>
           </div>
         </div>
