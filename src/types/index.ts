@@ -105,6 +105,8 @@ export interface PracticeSession {
   audioPath?: string | null
   durationSeconds: number
   wordCount: number
+  /** Stored with the session so the correction view needs a single read. */
+  corrections: Correction[]
   scores: Scores
   summary: string
   strengths: string[]
