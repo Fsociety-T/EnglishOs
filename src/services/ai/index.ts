@@ -1,3 +1,4 @@
+import { claudeProvider } from './claudeProvider'
 import { mockProvider } from './mockProvider'
 import type { AiProvider } from './types'
 
@@ -5,11 +6,15 @@ export type * from './types'
 
 /**
  * The only place the app decides which reviewer it is talking to.
- * Phase 11 adds `claudeProvider` and this switch grows one case.
+ * The offline practice engine remains the safe default. Production enables
+ * Claude explicitly with VITE_AI_PROVIDER=claude, but the actual API key stays
+ * exclusively inside the Edge Function's secret store.
  */
 function selectProvider(): AiProvider {
   const configured = import.meta.env.VITE_AI_PROVIDER ?? 'mock'
   switch (configured) {
+    case 'claude':
+      return claudeProvider
     case 'mock':
     default:
       return mockProvider

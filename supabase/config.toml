@@ -1,0 +1,2 @@
+[functions.claude-review]
+verify_jwt = true
