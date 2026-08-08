@@ -1,35 +1,62 @@
 import { useState } from 'react'
-import { Check, Loader2, Mail } from 'lucide-react'
+import { LockKeyhole, Loader2, LogIn, UserPlus } from 'lucide-react'
 import { Button, Card } from '@/components/ui'
 import { requireSupabase } from '@/services/db/supabaseClient'
 
-/**
- * Magic-link sign in: no password to choose, forget, or leak. The redirect
- * keeps the current origin and path so it works on GitHub Pages under a
- * subdirectory as well as on localhost.
- */
+type Mode = 'sign-in' | 'sign-up'
+
+/** Standard email-and-password authentication for the cloud version of EnglishOS. */
 export default function Auth() {
+  const [mode, setMode] = useState<Mode>('sign-in')
   const [email, setEmail] = useState('')
-  const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(false)
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function sendLink() {
+  const signingUp = mode === 'sign-up'
+
+  function switchMode(nextMode: Mode) {
+    setMode(nextMode)
+    setError(null)
+    setConfirmPassword('')
+  }
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (submitting) return
+
     const address = email.trim()
-    if (!address || sending) return
-    setSending(true)
+    if (!address || !password) return
+    if (signingUp && password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+    if (signingUp && password.length < 6) {
+      setError('Choose a password with at least 6 characters.')
+      return
+    }
+
+    setSubmitting(true)
     setError(null)
     try {
-      const { error: authError } = await requireSupabase().auth.signInWithOtp({
-        email: address,
-        options: { emailRedirectTo: `${window.location.origin}${window.location.pathname}` },
-      })
-      if (authError) throw new Error(authError.message)
-      setSent(true)
+      const supabase = requireSupabase()
+      const result = signingUp
+        ? await supabase.auth.signUp({ email: address, password })
+        : await supabase.auth.signInWithPassword({ email: address, password })
+      if (result.error) throw new Error(result.error.message)
+
+      // If email confirmation is enabled in Supabase, no session is returned.
+      // Explain the configuration issue clearly instead of leaving the form idle.
+      if (signingUp && !result.data.session) {
+        throw new Error(
+          'Account created, but email confirmation is enabled. Disable “Confirm email” in Supabase Auth settings to allow immediate password sign-in.',
+        )
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send the link. Try again.')
+      setError(err instanceof Error ? err.message : 'Could not continue. Please try again.')
     } finally {
-      setSending(false)
+      setSubmitting(false)
     }
   }
 
@@ -46,62 +73,110 @@ export default function Auth() {
       </div>
 
       <Card>
-        {sent ? (
-          <div className="text-center">
-            <span className="mx-auto mb-4 grid size-12 place-items-center rounded-2xl bg-good/15 text-good">
-              <Check className="size-6" />
-            </span>
-            <h1 className="text-lg font-semibold">Check your email</h1>
-            <p className="mt-2 leading-relaxed text-fg-muted">
-              A sign-in link is on its way to{' '}
-              <span className="font-medium text-fg">{email}</span>. Open it on this device and you
-              are in.
-            </p>
-            <button
-              type="button"
-              onClick={() => setSent(false)}
-              className="mt-4 text-sm text-fg-faint underline transition hover:text-fg"
-            >
-              Use a different email
-            </button>
-          </div>
-        ) : (
-          <>
-            <h1 className="text-lg font-semibold">Sign in to sync your progress</h1>
-            <p className="mt-1.5 text-sm leading-relaxed text-fg-muted">
-              Your sessions, words and streak follow you between your phone and your computer.
-              No password needed - we email you a link.
-            </p>
+        <div className="mb-6 grid grid-cols-2 rounded-xl bg-white/5 p-1">
+          <button
+            type="button"
+            onClick={() => switchMode('sign-in')}
+            className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+              !signingUp ? 'bg-violet text-white shadow-sm' : 'text-fg-muted hover:text-fg'
+            }`}
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMode('sign-up')}
+            className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+              signingUp ? 'bg-violet text-white shadow-sm' : 'text-fg-muted hover:text-fg'
+            }`}
+          >
+            Create account
+          </button>
+        </div>
 
+        <h1 className="text-lg font-semibold">{signingUp ? 'Create your account' : 'Welcome back'}</h1>
+        <p className="mt-1.5 text-sm leading-relaxed text-fg-muted">
+          {signingUp
+            ? 'Create an account to keep your English practice in sync across devices.'
+            : 'Sign in to continue practising and keep your progress synced.'}
+        </p>
+
+        <form className="mt-5 space-y-4" onSubmit={submit}>
+          <div>
+            <label htmlFor="email" className="mb-1.5 block text-sm text-fg-muted">
+              Email address
+            </label>
             <input
+              id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendLink()}
+              onChange={(event) => setEmail(event.target.value)}
               placeholder="you@example.com"
               autoComplete="email"
-              className="mt-5 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-fg outline-none placeholder:text-fg-faint focus:border-violet/50"
+              required
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-fg outline-none placeholder:text-fg-faint focus:border-violet/50"
             />
+          </div>
 
-            {error && <p className="mt-2 text-sm text-bad">{error}</p>}
+          <div>
+            <label htmlFor="password" className="mb-1.5 block text-sm text-fg-muted">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete={signingUp ? 'new-password' : 'current-password'}
+              minLength={signingUp ? 6 : undefined}
+              required
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-fg outline-none focus:border-violet/50"
+            />
+          </div>
 
-            <div className="mt-4">
-              <Button onClick={sendLink} disabled={!email.trim() || sending} className="w-full">
-                {sending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="size-4" />
-                    Email me a sign-in link
-                  </>
-                )}
-              </Button>
+          {signingUp && (
+            <div>
+              <label htmlFor="confirm-password" className="mb-1.5 block text-sm text-fg-muted">
+                Confirm password
+              </label>
+              <input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                autoComplete="new-password"
+                minLength={6}
+                required
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-fg outline-none focus:border-violet/50"
+              />
             </div>
-          </>
-        )}
+          )}
+
+          {error && <p className="text-sm text-bad">{error}</p>}
+
+          <Button type="submit" disabled={submitting} className="w-full">
+            {submitting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                {signingUp ? 'Creating account...' : 'Signing in...'}
+              </>
+            ) : signingUp ? (
+              <>
+                <UserPlus className="size-4" />
+                Create account
+              </>
+            ) : (
+              <>
+                <LogIn className="size-4" />
+                Sign in
+              </>
+            )}
+          </Button>
+        </form>
+
+        <p className="mt-5 flex items-center justify-center gap-1.5 text-xs text-fg-faint">
+          <LockKeyhole className="size-3.5" /> Your password is securely handled by Supabase.
+        </p>
       </Card>
     </main>
   )
