@@ -53,6 +53,15 @@ export interface VocabSuggestion {
   example: string
 }
 
+/** What a phrase the learner could not catch actually means. */
+export interface PhraseExplanation {
+  meaning: string
+  /** Why it was hard to hear: an idiom, a contraction, two words run together. */
+  notes: string[]
+  /** Words from the phrase worth keeping, ready to save. */
+  words: { word: string; definition: string }[]
+}
+
 export interface ReviewWritingInput {
   text: string
   topic: string
@@ -108,4 +117,17 @@ export interface AiProvider {
     language: LearningLanguage
     corrections: Correction[]
   }): Promise<LevelEstimate>
+  /**
+   * Explain something the learner could not catch while listening.
+   *
+   * `phrase` is what they *think* they heard, so it may be misheard or
+   * misspelt - the point is to guess well rather than to demand accuracy.
+   */
+  explainPhrase(input: {
+    phrase: string
+    /** The line before it, when there is a transcript to take one from. */
+    context?: string
+    language: LearningLanguage
+    level: CefrLevel
+  }): Promise<PhraseExplanation>
 }

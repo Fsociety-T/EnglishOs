@@ -213,6 +213,16 @@ const en = {
   'pod.openNewTab': 'Open in a new tab',
   'pod.notePlaceholder': 'A word, a phrase, or an idea you liked...',
   'pod.addNote': 'Add note',
+  'pod.askTitle': 'Did not catch something?',
+  'pod.askSub':
+    'Type what you think you heard, even if it is wrong. This works on any video, transcript or not.',
+  'pod.askPlaceholder': 'What you think they said...',
+  'pod.ask': 'Explain it',
+  'pod.asking': 'Listening back...',
+  'pod.explainLine': 'Explain this line',
+  'pod.explainFailed': 'That could not be explained just now. Try again.',
+  'pod.explainOffline':
+    'The offline engine cannot work out a half-heard phrase, so it will not guess. This needs the full AI reviewer.',
   'pod.transcriptTitle': 'Transcript',
   'pod.transcriptHint': 'Tap any word to save it to your notebook.',
   'pod.followAlong': 'Follow the audio',
@@ -682,6 +692,16 @@ const fr: Record<StringKey, string> = {
   'pod.openNewTab': 'Ouvrir dans un nouvel onglet',
   'pod.notePlaceholder': 'Un mot, une expression ou une idée qui vous a plu...',
   'pod.addNote': 'Ajouter une note',
+  'pod.askTitle': 'Vous n’avez pas compris ?',
+  'pod.askSub':
+    'Tapez ce que vous croyez avoir entendu, même si c’est faux. Cela marche sur n’importe quelle vidéo, avec ou sans transcription.',
+  'pod.askPlaceholder': 'Ce que vous croyez avoir entendu...',
+  'pod.ask': 'Expliquer',
+  'pod.asking': 'Réécoute...',
+  'pod.explainLine': 'Expliquer cette ligne',
+  'pod.explainFailed': 'Impossible d’expliquer pour le moment. Réessayez.',
+  'pod.explainOffline':
+    'Le moteur hors ligne ne peut pas deviner une phrase mal entendue, et il ne fera pas semblant. Cela demande l’IA complète.',
   'pod.transcriptTitle': 'Transcription',
   'pod.transcriptHint': 'Touchez un mot pour l’enregistrer dans votre carnet.',
   'pod.followAlong': 'Suivre l’audio',
