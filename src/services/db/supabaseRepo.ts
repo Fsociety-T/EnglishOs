@@ -9,6 +9,7 @@ import type {
   PracticeSession,
   Profile,
   Scores,
+  Song,
   SrsBox,
   LearningLanguage,
   VocabWord,
@@ -179,6 +180,30 @@ function toPodcast(row: PodcastRow): Podcast {
     status: row.status,
     progressSeconds: row.progress_seconds,
     rating: row.rating,
+    createdAt: row.created_at,
+  }
+}
+
+interface SongRow {
+  id: string
+  language: LearningLanguage
+  title: string
+  artist: string
+  url: string
+  embed_id: string | null
+  lines: Song['lines']
+  created_at: string
+}
+
+function toSong(row: SongRow): Song {
+  return {
+    id: row.id,
+    language: row.language ?? 'en',
+    title: row.title,
+    artist: row.artist ?? '',
+    url: row.url,
+    embedId: row.embed_id,
+    lines: row.lines ?? [],
     createdAt: row.created_at,
   }
 }
@@ -427,6 +452,58 @@ export const supabaseRepo: Repository = {
     if (error) throw new Error(error.message)
   },
 
+  async listSongs() {
+    const sb = requireSupabase()
+    const rows = check(
+      await sb.from('songs').select('*').order('created_at', { ascending: false }),
+    ) as SongRow[]
+    return rows.map(toSong)
+  },
+
+  async getSong(id) {
+    const sb = requireSupabase()
+    const { data, error } = await sb.from('songs').select('*').eq('id', id).maybeSingle()
+    if (error) throw new Error(error.message)
+    return data ? toSong(data as SongRow) : null
+  },
+
+  async addSong(song) {
+    const sb = requireSupabase()
+    const uid = await userId()
+    const { error } = await sb.from('songs').insert({
+      id: song.id,
+      user_id: uid,
+      language: song.language,
+      title: song.title,
+      artist: song.artist,
+      url: song.url,
+      embed_id: song.embedId ?? null,
+      lines: song.lines,
+      created_at: song.createdAt,
+    })
+    if (error) throw new Error(error.message)
+    return song
+  },
+
+  async updateSong(id, patch) {
+    const sb = requireSupabase()
+    const row: Record<string, unknown> = {}
+    if (patch.title !== undefined) row.title = patch.title
+    if (patch.artist !== undefined) row.artist = patch.artist
+    // Sent whole rather than per line: one tap changes one timing, and a
+    // partial write would need a read-modify-write round trip to be safe.
+    if (patch.lines !== undefined) row.lines = patch.lines
+    if (Object.keys(row).length === 0) return
+    const { error } = await sb.from('songs').update(row).eq('id', id)
+    if (error) throw new Error(error.message)
+  },
+
+  async deleteSong(id) {
+    const sb = requireSupabase()
+    const { error } = await sb.from('songs').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+  },
+
   async listPodcasts() {
     const sb = requireSupabase()
     const rows = check(
@@ -562,19 +639,20 @@ export const supabaseRepo: Repository = {
   },
 
   async exportAll() {
-    const [profile, sessions, lessons, vocabulary, podcasts, stats] = await Promise.all([
+    const [profile, sessions, lessons, vocabulary, podcasts, songs, stats] = await Promise.all([
       supabaseRepo.getProfile(),
       supabaseRepo.listSessions(),
       supabaseRepo.listLessons(),
       supabaseRepo.listVocabulary(),
       supabaseRepo.listPodcasts(),
+      supabaseRepo.listSongs(),
       supabaseRepo.listDailyStats(),
     ])
     return JSON.stringify(
       {
         version: 1,
         exportedAt: new Date().toISOString(),
-        data: { profile, sessions, lessons, vocabulary, podcasts, notes: [], stats },
+        data: { profile, sessions, lessons, vocabulary, podcasts, songs, notes: [], stats },
       },
       null,
       2,
@@ -596,6 +674,7 @@ export const supabaseRepo: Repository = {
     for (const table of [
       'podcast_notes',
       'podcasts',
+      'songs',
       'vocabulary',
       'lessons',
       'sessions',

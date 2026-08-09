@@ -111,6 +111,25 @@ create table if not exists public.vocabulary (
 );
 create index if not exists vocabulary_due_idx on public.vocabulary (user_id, next_review_at);
 
+-- ------------------------------------------------------------------- songs --
+-- The words are the learner's own transcription and the timings are their own
+-- work, tapped in while the song plays. Nothing here is fetched or shipped.
+--
+-- `lines` is jsonb for the same reason a session's corrections are: the lines
+-- are always read together with the song and never queried on their own.
+create table if not exists public.songs (
+  id          uuid        primary key default gen_random_uuid(),
+  user_id     uuid        not null references auth.users on delete cascade,
+  language    text        not null default 'en' check (language in ('en','fr')),
+  title       text        not null,
+  artist      text        not null default '',
+  url         text        not null,
+  embed_id    text,
+  lines       jsonb       not null default '[]'::jsonb,
+  created_at  timestamptz not null default now()
+);
+create index if not exists songs_user_idx on public.songs (user_id, created_at desc);
+
 -- ---------------------------------------------------------------- podcasts --
 create table if not exists public.podcasts (
   id                uuid primary key default gen_random_uuid(),
@@ -256,6 +275,21 @@ end $$;
 
 create index if not exists lessons_due_idx on public.lessons (user_id, next_review_at);
 
+-- ----------------------------------------------------- song words (v6) --
+-- A word saved from a song needs a source the check constraint allows. Unlike
+-- every backfill above this one cannot be `add ... if not exists`: the
+-- constraint already exists and lists four values, so it has to be dropped and
+-- rebuilt. Dropping first by name makes the whole thing re-runnable.
+--
+-- `songs` itself needs no backfill - `create table if not exists` above adds it
+-- to an existing project, and the RLS loop below already covers it.
+do $$
+begin
+  alter table public.vocabulary drop constraint if exists vocabulary_source_check;
+  alter table public.vocabulary add constraint vocabulary_source_check
+    check (source in ('writing','speaking','podcast','song','manual'));
+end $$;
+
 -- Check constraints are added separately: each is skipped if already present.
 do $$
 declare
@@ -288,7 +322,7 @@ declare
 begin
   -- profiles keys on id; every other table keys on user_id.
   for t in select unnest(array[
-      'sessions','lessons','vocabulary','podcasts','podcast_notes','daily_stats'
+      'sessions','lessons','vocabulary','podcasts','podcast_notes','songs','daily_stats'
     ])
   loop
     execute format('drop policy if exists "own rows" on public.%I', t);
