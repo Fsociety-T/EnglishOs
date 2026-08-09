@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, BookmarkPlus, Check, ExternalLink, Plus, Trash2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  BookmarkPlus,
+  Check,
+  ExternalLink,
+  Loader2,
+  Plus,
+  Sparkles,
+  Trash2,
+} from 'lucide-react'
 import { Badge, Button, Card, EmptyState, SectionHeading, Spinner, Tabs } from '@/components/ui'
 import { useLanguage, useT } from '@/i18n'
 import { useAsync } from '@/hooks/useAsync'
@@ -9,6 +18,8 @@ import { useYouTubePlayer } from '@/hooks/useYouTubePlayer'
 import { formatTimestamp, parseMediaUrl } from '@/lib/media'
 import { parseTranscript, transcriptIndexAt } from '@/lib/transcript'
 import { newId } from '@/lib/utils'
+import { ai } from '@/services/ai'
+import type { PhraseExplanation } from '@/services/ai/types'
 import { useRepo } from '@/services/db'
 import type { StringKey } from '@/i18n/strings'
 import type { PodcastStatus } from '@/types'
@@ -33,6 +44,11 @@ export default function PodcastDetail() {
   const [pasting, setPasting] = useState(false)
   const [follow, setFollow] = useState(true)
   const [savedLineWords, setSavedLineWords] = useState<Set<string>>(new Set())
+  const [phrase, setPhrase] = useState('')
+  const [phraseContext, setPhraseContext] = useState('')
+  const [explaining, setExplaining] = useState(false)
+  const [explanation, setExplanation] = useState<PhraseExplanation | null>(null)
+  const [explainError, setExplainError] = useState<string | null>(null)
 
   const { data: podcast, loading, reload } = useAsync(
     () => (id ? repo.getPodcast(id) : Promise.resolve(null)),
@@ -120,6 +136,50 @@ export default function PodcastDetail() {
     })
     await repo.recordActivity({ wordsLearned: 1 })
     setSavedWords((prev) => new Set(prev).add(noteId))
+  }
+
+  /** The point of this box: it works on a video with no captions at all. */
+  async function askAi() {
+    const asked = phrase.trim()
+    if (!asked || explaining || !podcast) return
+    setExplaining(true)
+    setExplainError(null)
+    setExplanation(null)
+    try {
+      const profile = await repo.getProfile()
+      const result = await ai.explainPhrase({
+        phrase: asked,
+        context: phraseContext || undefined,
+        language: profile.language,
+        level: profile.level,
+      })
+      if (!result.meaning) setExplainError(t('pod.explainOffline'))
+      else setExplanation(result)
+    } catch (err) {
+      setExplainError(err instanceof Error ? err.message : t('pod.explainFailed'))
+    } finally {
+      setExplaining(false)
+    }
+  }
+
+  /** Save a word the explanation offered, definition and all. */
+  async function saveSuggested(word: string, definition: string) {
+    if (savedLineWords.has(word.toLowerCase()) || !podcast) return
+    await repo.addWord({
+      id: newId(),
+      language,
+      word,
+      definition,
+      example: phrase.trim(),
+      tags: ['podcast'],
+      source: 'podcast',
+      sourceId: podcast.id,
+      srsBox: 1,
+      nextReviewAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    })
+    await repo.recordActivity({ wordsLearned: 1 })
+    setSavedLineWords((prev) => new Set(prev).add(word.toLowerCase()))
   }
 
   async function saveTranscript() {
@@ -275,6 +335,12 @@ export default function PodcastDetail() {
                   onJump={isYouTube ? player.seekTo : undefined}
                   onSaveWord={saveWordFromTranscript}
                   savedWords={savedLineWords}
+                  onExplain={(line) => {
+                    setPhrase(line)
+                    setPhraseContext('')
+                    setExplanation(null)
+                    setExplainError(null)
+                  }}
                   onReplace={() => {
                     setTranscriptDraft(transcript.map((line) => line.text).join('\n'))
                     setPasting(true)
@@ -285,8 +351,86 @@ export default function PodcastDetail() {
           </section>
         </div>
 
-        {/* Notes */}
+        {/* Ask, and notes */}
         <div className="space-y-4">
+          <Card className="border-violet/30">
+            <SectionHeading
+              title={t('pod.askTitle')}
+              subtitle={t('pod.askSub')}
+            />
+            <textarea
+              value={phrase}
+              onChange={(e) => setPhrase(e.target.value)}
+              placeholder={t('pod.askPlaceholder')}
+              className="min-h-20 w-full resize-y rounded-xl border border-white/10 bg-white/5 p-3 text-sm leading-relaxed text-fg outline-none placeholder:text-fg-faint focus:border-violet/50"
+            />
+            <div className="mt-3">
+              <Button onClick={askAi} disabled={!phrase.trim() || explaining}>
+                {explaining ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    {t('pod.asking')}
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="size-4" />
+                    {t('pod.ask')}
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {explainError && (
+              <p className="mt-3 rounded-xl border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
+                {explainError}
+              </p>
+            )}
+
+            {explanation && (
+              <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
+                <p className="leading-relaxed text-fg">{explanation.meaning}</p>
+                {explanation.notes.length > 0 && (
+                  <ul className="space-y-1.5">
+                    {explanation.notes.map((note) => (
+                      <li key={note} className="flex gap-2 text-sm leading-relaxed text-fg-muted">
+                        <span className="mt-2 size-1.5 shrink-0 rounded-full bg-violet" />
+                        <span>{note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {explanation.words.length > 0 && (
+                  <div className="space-y-2">
+                    {explanation.words.map((item) => (
+                      <div
+                        key={item.word}
+                        className="flex items-start justify-between gap-3 rounded-xl bg-white/5 px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-medium text-fg">{item.word}</p>
+                          <p className="text-sm leading-relaxed text-fg-faint">{item.definition}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => saveSuggested(item.word, item.definition)}
+                          disabled={savedLineWords.has(item.word.toLowerCase())}
+                          aria-label={t('pod.saveThisWord')}
+                          className="shrink-0 rounded-lg p-1.5 text-fg-faint transition hover:bg-violet/15 hover:text-violet-soft disabled:opacity-40"
+                        >
+                          {savedLineWords.has(item.word.toLowerCase()) ? (
+                            <Check className="size-4 text-good" />
+                          ) : (
+                            <BookmarkPlus className="size-4" />
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+
           <SectionHeading
             title={t('pod.notes')}
             subtitle={t('pod.notesSub')}

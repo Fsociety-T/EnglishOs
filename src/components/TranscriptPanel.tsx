@@ -30,6 +30,7 @@ export default function TranscriptPanel({
   onSaveWord,
   savedWords,
   onReplace,
+  onExplain,
 }: {
   lines: TranscriptLine[]
   /** -1 when nothing is playing or the paste carried no times. */
@@ -41,6 +42,8 @@ export default function TranscriptPanel({
   onSaveWord: (word: string, line: string) => void
   savedWords: Set<string>
   onReplace: () => void
+  /** Send a line to the "what did they just say?" box. */
+  onExplain: (line: string) => void
 }) {
   const t = useT()
   const activeRef = useRef<HTMLLIElement | null>(null)
@@ -96,6 +99,14 @@ export default function TranscriptPanel({
                 {formatTimestamp(line.startSeconds)}
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => onExplain(line.text)}
+              title={t('pod.explainLine')}
+              className="mr-2 rounded px-1 text-xs text-fg-faint transition hover:bg-violet/20 hover:text-violet-soft"
+            >
+              ?
+            </button>
             {tokenize(line.text).map((token, j) =>
               token.trim() === '' ? (
                 <span key={j}>{token}</span>

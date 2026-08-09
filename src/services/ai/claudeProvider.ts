@@ -2,7 +2,15 @@ import { FunctionsHttpError } from '@supabase/supabase-js'
 import { newId } from '@/lib/utils'
 import type { LevelEstimate } from '@/types'
 import { requireSupabase } from '@/services/db/supabaseClient'
-import type { AiProvider, LessonDraft, Review, ReviewSpeakingInput, ReviewWritingInput, VocabSuggestion } from './types'
+import type {
+  AiProvider,
+  LessonDraft,
+  PhraseExplanation,
+  Review,
+  ReviewSpeakingInput,
+  ReviewWritingInput,
+  VocabSuggestion,
+} from './types'
 
 type Action =
   | 'review-writing'
@@ -10,6 +18,7 @@ type Action =
   | 'generate-lessons'
   | 'suggest-vocabulary'
   | 'estimate-level'
+  | 'explain-phrase'
 
 /**
  * On a non-2xx the Supabase client reports only "Edge Function returned a
@@ -87,5 +96,9 @@ export const claudeProvider: AiProvider = {
 
   estimateLevel(input): Promise<LevelEstimate> {
     return invoke<LevelEstimate>('estimate-level', input)
+  },
+
+  explainPhrase(input): Promise<PhraseExplanation> {
+    return invoke<PhraseExplanation>('explain-phrase', input)
   },
 }

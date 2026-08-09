@@ -6,6 +6,7 @@ type Action =
   | 'generate-lessons'
   | 'suggest-vocabulary'
   | 'estimate-level'
+  | 'explain-phrase'
 
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
 const CONFIDENCES = new Set(['low', 'medium', 'high'])
@@ -229,6 +230,15 @@ const VOCABULARY_SCHEMA = object({
   },
 })
 
+const PHRASE_SCHEMA = object({
+  meaning: str,
+  notes: { type: 'array', items: str },
+  words: {
+    type: 'array',
+    items: object({ word: str, definition: str }),
+  },
+})
+
 const LEVEL_SCHEMA = object({
   level: { type: 'string', enum: [...CEFR_LEVELS] },
   confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
@@ -246,6 +256,8 @@ function schemaFor(action: Action): { name: string; schema: unknown } {
       return { name: 'vocabulary', schema: VOCABULARY_SCHEMA }
     case 'estimate-level':
       return { name: 'level', schema: LEVEL_SCHEMA }
+    case 'explain-phrase':
+      return { name: 'phrase', schema: PHRASE_SCHEMA }
   }
 }
 
@@ -264,6 +276,20 @@ function levelPrompt(input: Record<string, unknown>): string {
   return `You are a ${profile.name} examiner placing a learner on the CEFR scale from a single writing sample.\n\n${profile.feedbackLanguage}\n\nJudge on two axes, in this order.\n\nRANGE sets the ceiling - how much language the learner reaches for at all: sentence length and variety, subordinate clauses, the tenses and moods attempted, vocabulary beyond the everyday core, and discourse markers.\n\nACCURACY places them inside that ceiling - how much of what they reached for actually lands.\n\nCritical: fewer mistakes does NOT mean a higher level. A learner writing only short, simple, correct sentences is A1 or A2 no matter how clean the text is. A learner attempting complex structures and getting some wrong is B1 or higher, because attempting them is itself evidence. Never place a learner above B1 on the basis of clean but simple writing, and never below B1 purely because an ambitious attempt failed.\n\nLength caps the ceiling: a sample under 120 words cannot demonstrate C1 or C2, however good it is.\n\nReturn a JSON object with exactly this shape:\n{"level":"A1|A2|B1|B2|C1|C2","confidence":"low|medium|high","evidence":["short reason","short reason"]}\n\nGive two to four evidence lines. Each must point at something concrete in the text - a structure attempted, a pattern of error, the range of vocabulary - not a general compliment.\n\nMistakes already found by the checker: ${JSON.stringify(corrections)}\n\nLearner text:\n${text(input.text, 12_000)}`
 }
 
+/**
+ * Explain a phrase the learner could not catch.
+ *
+ * This exists for the videos with no captions at all, so the learner is
+ * typing what they *think* they heard - often mangled. Guessing at a garbled
+ * phrase and saying so is far more useful than refusing it, which is why the
+ * prompt is told to attempt a reading rather than ask for a better recording.
+ */
+function phrasePrompt(input: Record<string, unknown>): string {
+  const profile = LANGUAGE_PROFILE[language(input)]
+  const context = text(input.context, 600)
+  return `You are a ${profile.name} teacher. A learner at CEFR ${text(input.level, 8)} was listening to a podcast and could not follow one phrase. They have typed what they think they heard, so it may be misheard or misspelt.\n\n${profile.feedbackLanguage}\n\nReturn a JSON object with exactly this shape:\n{"meaning":"what it means, in plain words","notes":["what made it hard to catch"],"words":[{"word":"string","definition":"short definition"}]}\n\nmeaning: say what the phrase means, in one or two plain sentences pitched at their level. If what they typed is garbled, work out the most likely thing that was actually said, say so ("this is probably ..."), and explain that. Never refuse and never ask them to listen again - a best guess with a caveat is worth far more to them than nothing.\n\nnotes: one to three short reasons it was hard to hear - an idiom, a contraction, two words running together, a swallowed sound, unusual word order, slang, a cultural reference. Skip anything obvious.\n\nwords: up to three words from the phrase worth keeping, each with a short definition. Empty array if it is all everyday vocabulary. Only words that actually appear in the phrase.\n\n${context ? `The line before it, for context: ${context}\\n` : ''}The phrase: ${text(input.phrase, 600)}`
+}
+
 function promptFor(action: Action, input: Record<string, unknown>): string {
   switch (action) {
     case 'review-writing':
@@ -276,6 +302,8 @@ function promptFor(action: Action, input: Record<string, unknown>): string {
       return vocabularyPrompt(input)
     case 'estimate-level':
       return levelPrompt(input)
+    case 'explain-phrase':
+      return phrasePrompt(input)
   }
 }
 
@@ -305,6 +333,21 @@ function locate(source: string, original: string, claimedStart: number): [number
     if (best === -1 || Math.abs(at - claimedStart) < Math.abs(best - claimedStart)) best = at
   }
   return best === -1 ? null : [best, best + original.length]
+}
+
+function validatePhrase(value: unknown) {
+  const phrase = value as Record<string, unknown>
+  const notes = Array.isArray(phrase.notes) ? phrase.notes : []
+  const words = Array.isArray(phrase.words) ? phrase.words : []
+  return {
+    meaning: text(phrase.meaning, 1_200),
+    notes: notes.slice(0, 3).map((note) => text(note, 300)).filter(Boolean),
+    words: words.slice(0, 3).flatMap((item) => {
+      const row = item as Record<string, unknown>
+      const word = text(row.word, 80)
+      return word ? [{ word, definition: text(row.definition, 300) }] : []
+    }),
+  }
 }
 
 function validateReview(value: unknown, source: string) {
@@ -448,7 +491,7 @@ Deno.serve(async (request) => {
     const action = body.action
     if (
       !action ||
-      !['review-writing', 'review-speaking', 'generate-lessons', 'suggest-vocabulary', 'estimate-level'].includes(action)
+      !['review-writing', 'review-speaking', 'generate-lessons', 'suggest-vocabulary', 'estimate-level', 'explain-phrase'].includes(action)
     ) {
       return respond({ error: 'Unknown AI request.' }, 400, origin)
     }
@@ -510,10 +553,12 @@ Deno.serve(async (request) => {
           ? validateLessons(parsed?.lessons)
           : action === 'suggest-vocabulary'
             ? validateVocabulary(parsed?.words)
-            : validateLevel(
-                parsed,
-                text(input.text, 12_000).split(/[^A-Za-z\u00C0-\u024F']+/).filter(Boolean).length,
-              )
+            : action === 'estimate-level'
+              ? validateLevel(
+                  parsed,
+                  text(input.text, 12_000).split(/[^A-Za-z\u00C0-\u024F']+/).filter(Boolean).length,
+                )
+              : validatePhrase(parsed)
     return respond({ data }, 200, origin)
   } catch (error) {
     console.error('claude-review failed:', error instanceof Error ? error.message : 'Unknown error')

@@ -17,6 +17,7 @@ import type {
   AiProvider,
   CorrectionDraft,
   LessonDraft,
+  PhraseExplanation,
   Review,
   ReviewSpeakingInput,
   ReviewWritingInput,
@@ -391,6 +392,17 @@ export const mockProvider: AiProvider = {
   }): Promise<VocabSuggestion[]> {
     await delay(400)
     return pickVocabulary(text, language)
+  },
+
+  /**
+   * Nothing honest to return. Working out what a half-heard phrase meant is
+   * exactly the judgement pattern rules cannot make, and a guess dressed as an
+   * explanation would mislead the one learner who cannot check it. The screen
+   * says the offline engine cannot do this instead.
+   */
+  async explainPhrase(): Promise<PhraseExplanation> {
+    await delay(200)
+    return { meaning: '', notes: [], words: [] }
   },
 
   async estimateLevel({ text, language, corrections }): Promise<LevelEstimate> {
