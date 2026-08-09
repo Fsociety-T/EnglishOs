@@ -219,27 +219,10 @@ const en = {
   'pod.askPlaceholder': 'What you think they said...',
   'pod.ask': 'Explain it',
   'pod.asking': 'Listening back...',
-  'pod.explainLine': 'Explain this line',
   'pod.explainFailed': 'That could not be explained just now. Try again.',
   'pod.explainOffline':
     'The offline engine cannot work out a half-heard phrase, so it will not guess. This needs the full AI reviewer.',
-  'pod.transcriptTitle': 'Transcript',
-  'pod.transcriptHint': 'Tap any word to save it to your notebook.',
-  'pod.followAlong': 'Follow the audio',
-  'pod.replaceTranscript': 'Replace',
-  'pod.jumpHere': 'Play from here',
   'pod.saveThisWord': 'Save this word',
-  'pod.noTranscriptTitle': 'No transcript yet',
-  'pod.noTranscriptBody':
-    'Paste the episode transcript here and it appears under the video, where you can tap any word to save it. The app cannot take it from YouTube itself, so it has to come from you - but only once per episode.',
-  'pod.whereToGet':
-    'On YouTube, open the description and press Show transcript, then select it all and copy. Keep the times if they are there: they are what makes the words follow the audio.',
-  'pod.pasteTranscript': 'Paste a transcript',
-  'pod.pastePlaceholder': 'Paste the transcript here...',
-  'pod.saveTranscript': 'Save transcript',
-  'pod.transcriptSaved': '{count} lines saved.',
-  'pod.transcriptNoTimes':
-    'Saved, but this paste had no times in it, so the words cannot follow the audio. They are still tappable.',
 
   /* ---------------------------------------------------------- vocabulary -- */
   'vocab.loading': 'Loading your words...',
@@ -698,27 +681,10 @@ const fr: Record<StringKey, string> = {
   'pod.askPlaceholder': 'Ce que vous croyez avoir entendu...',
   'pod.ask': 'Expliquer',
   'pod.asking': 'Réécoute...',
-  'pod.explainLine': 'Expliquer cette ligne',
   'pod.explainFailed': 'Impossible d’expliquer pour le moment. Réessayez.',
   'pod.explainOffline':
     'Le moteur hors ligne ne peut pas deviner une phrase mal entendue, et il ne fera pas semblant. Cela demande l’IA complète.',
-  'pod.transcriptTitle': 'Transcription',
-  'pod.transcriptHint': 'Touchez un mot pour l’enregistrer dans votre carnet.',
-  'pod.followAlong': 'Suivre l’audio',
-  'pod.replaceTranscript': 'Remplacer',
-  'pod.jumpHere': 'Lire à partir d’ici',
   'pod.saveThisWord': 'Enregistrer ce mot',
-  'pod.noTranscriptTitle': 'Pas encore de transcription',
-  'pod.noTranscriptBody':
-    'Collez ici la transcription de l’épisode : elle apparaîtra sous la vidéo, et vous pourrez toucher n’importe quel mot pour l’enregistrer. L’application ne peut pas la récupérer depuis YouTube, elle doit donc venir de vous - mais une seule fois par épisode.',
-  'pod.whereToGet':
-    'Sur YouTube, ouvrez la description et appuyez sur Afficher la transcription, puis sélectionnez tout et copiez. Gardez les horodatages s’ils y sont : c’est ce qui permet aux mots de suivre l’audio.',
-  'pod.pasteTranscript': 'Coller une transcription',
-  'pod.pastePlaceholder': 'Collez la transcription ici...',
-  'pod.saveTranscript': 'Enregistrer la transcription',
-  'pod.transcriptSaved': '{count} lignes enregistrées.',
-  'pod.transcriptNoTimes':
-    'Enregistrée, mais ce texte ne contenait pas d’horodatages : les mots ne pourront pas suivre l’audio. Ils restent tout de même cliquables.',
 
   /* ---------------------------------------------------------- vocabulary -- */
   'vocab.loading': 'Chargement de vos mots...',

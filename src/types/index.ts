@@ -314,27 +314,10 @@ export interface VocabWord {
 export type PodcastPlatform = 'youtube' | 'spotify' | 'other'
 export type PodcastStatus = 'to-watch' | 'watching' | 'done'
 
-/**
- * One line of a transcript the learner pasted in.
- *
- * `startSeconds` is null when the paste carried no times - still worth
- * keeping and reading, it just cannot follow the playback.
- */
-export interface TranscriptLine {
-  text: string
-  startSeconds: number | null
-}
-
 export interface Podcast {
   id: string
   title: string
   url: string
-  /**
-   * The episode's words, pasted by the learner from the transcript panel
-   * YouTube already shows them. The app cannot read captions out of the
-   * player itself - that is another origin - so this is how the text gets in.
-   */
-  transcript?: TranscriptLine[]
   platform: PodcastPlatform
   /** Video/episode id extracted from the URL, used to build the embed. */
   embedId?: string | null

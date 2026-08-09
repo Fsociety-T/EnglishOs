@@ -13,10 +13,7 @@ import {
 import { Badge, Button, Card, EmptyState, SectionHeading, Spinner, Tabs } from '@/components/ui'
 import { useLanguage, useT } from '@/i18n'
 import { useAsync } from '@/hooks/useAsync'
-import TranscriptPanel, { bareWord } from '@/components/TranscriptPanel'
-import { useYouTubePlayer } from '@/hooks/useYouTubePlayer'
 import { formatTimestamp, parseMediaUrl } from '@/lib/media'
-import { parseTranscript, transcriptIndexAt } from '@/lib/transcript'
 import { newId } from '@/lib/utils'
 import { ai } from '@/services/ai'
 import type { PhraseExplanation } from '@/services/ai/types'
@@ -40,12 +37,8 @@ export default function PodcastDetail() {
   const [noteText, setNoteText] = useState('')
   const [stampMinutes, setStampMinutes] = useState('')
   const [savedWords, setSavedWords] = useState<Set<string>>(new Set())
-  const [transcriptDraft, setTranscriptDraft] = useState('')
-  const [pasting, setPasting] = useState(false)
-  const [follow, setFollow] = useState(true)
   const [savedLineWords, setSavedLineWords] = useState<Set<string>>(new Set())
   const [phrase, setPhrase] = useState('')
-  const [phraseContext, setPhraseContext] = useState('')
   const [explaining, setExplaining] = useState(false)
   const [explanation, setExplanation] = useState<PhraseExplanation | null>(null)
   const [explainError, setExplainError] = useState<string | null>(null)
@@ -58,16 +51,6 @@ export default function PodcastDetail() {
     () => (id ? repo.listNotes(id) : Promise.resolve([])),
     [id],
   )
-
-  // Parsed before the early returns because the player is a hook. An empty
-  // string simply yields the "no embed" shape, so this is safe while loading.
-  const media = parseMediaUrl(podcast?.url ?? '')
-  const isYouTube = media.platform === 'youtube' && Boolean(media.embedId)
-  // Only YouTube can say where it has reached, which is what lets the
-  // transcript follow along. Anything else still shows the words, unlit.
-  const player = useYouTubePlayer(isYouTube ? media.embedId : null)
-  const transcript = podcast?.transcript ?? []
-  const activeLine = transcriptIndexAt(transcript, player.currentTime)
 
   if (loading) return <Spinner label={t('common.loading')} />
 
@@ -83,6 +66,8 @@ export default function PodcastDetail() {
       </Card>
     )
   }
+
+  const media = parseMediaUrl(podcast.url)
 
   /** "12" means 12 minutes in; "12:30" means twelve and a half. */
   function parseStamp(raw: string): number | null {
@@ -149,7 +134,6 @@ export default function PodcastDetail() {
       const profile = await repo.getProfile()
       const result = await ai.explainPhrase({
         phrase: asked,
-        context: phraseContext || undefined,
         language: profile.language,
         level: profile.level,
       })
@@ -182,39 +166,11 @@ export default function PodcastDetail() {
     setSavedLineWords((prev) => new Set(prev).add(word.toLowerCase()))
   }
 
-  async function saveTranscript() {
-    if (!podcast) return
-    const parsed = parseTranscript(transcriptDraft)
-    if (parsed.length === 0) return
-    await repo.updatePodcast(podcast.id, { transcript: parsed })
-    setTranscriptDraft('')
-    setPasting(false)
-    reload()
-  }
-
-  /** A word tapped in the transcript, filed with the line it came from. */
-  async function saveWordFromTranscript(token: string, line: string) {
-    const word = bareWord(token)
-    if (!word || savedLineWords.has(word.toLowerCase()) || !podcast) return
-    await repo.addWord({
-      id: newId(),
-      language,
-      word,
-      definition: '',
-      example: line,
-      tags: ['podcast'],
-      source: 'podcast',
-      sourceId: podcast.id,
-      srsBox: 1,
-      nextReviewAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-    })
-    await repo.recordActivity({ wordsLearned: 1 })
-    setSavedLineWords((prev) => new Set(prev).add(word.toLowerCase()))
-  }
-
+  // No width here. `cn` is a plain join, so a `w-24` at the call site does not
+  // override a `w-full` baked in - both land, stylesheet order decides, and
+  // that is exactly how Add note ended up spilling out of its own card.
   const inputClass =
-    'w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-fg outline-none placeholder:text-fg-faint focus:border-violet/50'
+    'rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-fg outline-none placeholder:text-fg-faint focus:border-violet/50'
 
   return (
     <div className="space-y-6">
@@ -254,13 +210,7 @@ export default function PodcastDetail() {
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
         {/* Player */}
         <div>
-          {isYouTube ? (
-            <div className="overflow-hidden rounded-glass border border-white/10">
-              <div className="aspect-video w-full">
-                <div ref={player.containerRef} className="size-full" />
-              </div>
-            </div>
-          ) : media.embedUrl ? (
+          {media.embedUrl ? (
             <div className="overflow-hidden rounded-glass border border-white/10">
               <iframe
                 src={media.embedUrl}
@@ -288,67 +238,6 @@ export default function PodcastDetail() {
             </Card>
           )}
 
-          <section className="mt-5 space-y-3">
-            <SectionHeading title={t('pod.transcriptTitle')} />
-            {transcript.length === 0 || pasting ? (
-              <Card>
-                {transcript.length === 0 && (
-                  <>
-                    <p className="font-medium text-fg">{t('pod.noTranscriptTitle')}</p>
-                    <p className="mt-1 text-sm leading-relaxed text-fg-muted">
-                      {t('pod.noTranscriptBody')}
-                    </p>
-                  </>
-                )}
-                <p className="mt-3 text-sm leading-relaxed text-fg-faint">
-                  {t('pod.whereToGet')}
-                </p>
-                <textarea
-                  value={transcriptDraft}
-                  onChange={(e) => setTranscriptDraft(e.target.value)}
-                  placeholder={t('pod.pastePlaceholder')}
-                  className="mt-3 min-h-40 w-full resize-y rounded-xl border border-white/10 bg-white/5 p-3 text-sm leading-relaxed text-fg outline-none placeholder:text-fg-faint focus:border-violet/50"
-                />
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button onClick={saveTranscript} disabled={!transcriptDraft.trim()}>
-                    {t('pod.saveTranscript')}
-                  </Button>
-                  {transcript.length > 0 && (
-                    <Button variant="ghost" onClick={() => setPasting(false)}>
-                      {t('common.cancel')}
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            ) : (
-              <>
-                {!transcript.some((line) => line.startSeconds !== null) && (
-                  <p className="rounded-xl border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
-                    {t('pod.transcriptNoTimes')}
-                  </p>
-                )}
-                <TranscriptPanel
-                  lines={transcript}
-                  activeIndex={activeLine}
-                  follow={follow}
-                  onFollowChange={setFollow}
-                  onJump={isYouTube ? player.seekTo : undefined}
-                  onSaveWord={saveWordFromTranscript}
-                  savedWords={savedLineWords}
-                  onExplain={(line) => {
-                    setPhrase(line)
-                    setPhraseContext('')
-                    setExplanation(null)
-                    setExplainError(null)
-                  }}
-                  onReplace={() => {
-                    setTranscriptDraft(transcript.map((line) => line.text).join('\n'))
-                    setPasting(true)
-                  }}
-                />
-              </>
-            )}
-          </section>
         </div>
 
         {/* Ask, and notes */}

@@ -125,9 +125,6 @@ create table if not exists public.podcasts (
                       check (status in ('to-watch','watching','done')),
   progress_seconds  integer     not null default 0,
   rating            smallint    check (rating between 1 and 5),
-  -- The learner's pasted transcript. jsonb rather than a child table: the lines
-  -- are always read with the episode and never queried on their own.
-  transcript        jsonb       not null default '[]'::jsonb,
   created_at        timestamptz not null default now()
 );
 
@@ -258,17 +255,6 @@ exception
 end $$;
 
 create index if not exists lessons_due_idx on public.lessons (user_id, next_review_at);
-
--- ------------------------------------------- podcast transcripts (v6) --
--- The learner pastes the episode's words in from the transcript panel YouTube
--- already shows them; the app cannot read captions out of the player, which is
--- another origin. Empty array for every episode saved before this, which reads
--- correctly as "no transcript yet".
-do $$
-begin
-  alter table public.podcasts
-    add column if not exists transcript jsonb not null default '[]'::jsonb;
-end $$;
 
 -- Check constraints are added separately: each is skipped if already present.
 do $$
