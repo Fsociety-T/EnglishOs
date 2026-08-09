@@ -5,6 +5,7 @@ import { Badge, Button, Card, SectionHeading, Tabs } from '@/components/ui'
 import { randomTopic, topicCategoriesFor, topicsFor } from '@/data/topics'
 import { countWords } from '@/lib/text'
 import { useLanguage, useT } from '@/i18n'
+import { practiceErrorMessage } from '@/lib/practiceError'
 import { submitPractice } from '@/lib/session'
 import { formatDuration } from '@/lib/utils'
 import type { Topic } from '@/types'
@@ -83,7 +84,7 @@ export default function Write() {
       localStorage.removeItem(DRAFT_KEY)
       navigate(`/session/${session.id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('write.failed'))
+      setError(practiceErrorMessage(err, t, 'write.failed'))
       setSubmitting(false)
     }
   }

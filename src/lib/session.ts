@@ -11,6 +11,7 @@ import type {
 import { ai } from '@/services/ai'
 import type { Review } from '@/services/ai/types'
 import { repo } from '@/services/db'
+import { WrongLanguageError, detectWrongLanguage } from './detectLanguage'
 import { estimateLevel } from './level'
 import { countWords } from './text'
 import { newId } from './utils'
@@ -36,6 +37,12 @@ async function reviewFor(
   profile: Profile,
   sessionId: string,
 ): Promise<{ review: Review; corrections: Correction[] }> {
+  // Refuse before spending a review on it. Asked to correct French as English,
+  // the reviewer does not fail - it returns a page of confident nonsense, and
+  // the learner has no way to tell that the feedback is worthless.
+  const wrongLanguage = detectWrongLanguage(input.content, profile.language)
+  if (wrongLanguage) throw new WrongLanguageError(wrongLanguage, profile.language)
+
   const review =
     input.kind === 'speaking' && input.metrics
       ? await ai.reviewSpeaking({

@@ -1,4 +1,4 @@
-name: Check level estimator
+name: Check language logic
 
 # The placement test tells a learner what level they are. If the estimator
 # drifts, nothing crashes and nothing fails to build - it just starts telling
@@ -8,6 +8,11 @@ name: Check level estimator
 # beginner must never outrank an ambitious intermediate. Scoring on accuracy
 # alone inverts exactly that pair, so this job exists to keep the range axis
 # honest as the rules and weights change.
+#
+# The wrong-language guard is here for the same reason. It decides whether to
+# refuse a learner's work outright, so a threshold nudged the wrong way does
+# not crash anything - it quietly starts telling people their French is not
+# French.
 #
 # Separate from the Pages deploy on purpose, same as the edge function check:
 # a drifting estimator should be loud, but must never stop the website
@@ -20,16 +25,18 @@ on:
       - 'src/lib/level.ts'
       - 'src/lib/levelSignals.ts'
       - 'src/lib/text.ts'
+      - 'src/lib/detectLanguage.ts'
       - 'src/services/ai/rules*.ts'
-      - 'scripts/calibrate-levels.mts'
+      - 'scripts/calibrate-*.mts'
       - '.github/workflows/levels.yml'
   pull_request:
     paths:
       - 'src/lib/level.ts'
       - 'src/lib/levelSignals.ts'
       - 'src/lib/text.ts'
+      - 'src/lib/detectLanguage.ts'
       - 'src/services/ai/rules*.ts'
-      - 'scripts/calibrate-levels.mts'
+      - 'scripts/calibrate-*.mts'
   workflow_dispatch:
 
 permissions:
@@ -53,3 +60,6 @@ jobs:
 
       - name: Calibrate the level estimator
         run: npm run check:levels
+
+      - name: Calibrate the wrong-language guard
+        run: npm run check:detection
