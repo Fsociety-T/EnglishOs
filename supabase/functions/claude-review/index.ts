@@ -110,7 +110,7 @@ function reviewPrompt(kind: 'writing' | 'speaking', input: Record<string, unknow
   const metrics = kind === 'speaking' ? input.metrics : undefined
   const profile = LANGUAGE_PROFILE[language(input)]
   const level = text(input.level, 8)
-  return `You are an expert, encouraging ${profile.name} teacher. Review the learner's ${kind} at CEFR ${level}. The learner is writing in ${profile.name}; judge it by ${profile.name} rules only. Correct only genuine issues; do not rewrite for style alone.\n\n${profile.feedbackLanguage}\n\nReturn a JSON object with exactly this shape:\n{"correctedText":"the learner's full text with every correction applied","improvedText":"the same text rewritten at its best","corrections":[{"original":"string","corrected":"string","explanation":"plain language","errorType":"${profile.errorTypes}","severity":"minor|moderate|major","charStart":0,"charEnd":0}],"scores":{"overall":0,"grammar":0,"vocabulary":0,"fluency":0},"summary":"1-2 specific encouraging sentences","strengths":["string"],"nextFocus":["string"]}\n\ncorrectedText and improvedText are two different things and must not be the same string. correctedText fixes what is wrong and changes nothing else. improvedText shows what good looks like:\n- Keep every idea the learner had, in the same order. Add no new facts, opinions or examples.\n- Stay within about 10 percent of the original length. This is a model of how they could have written it, not a longer essay.\n- Improve the STRUCTURE: join choppy sentences, vary sentence length, tighten word order, and make each sentence lead into the next.\n- Write it as a strong CEFR ${level} writer would - one realistic step above this learner, using structures they could reach for next time. Do not show off vocabulary far above ${level}; an unreachable model teaches nothing.\n\nEvery one of correctedText, improvedText, corrections, scores, summary, strengths and nextFocus is REQUIRED. Include all six even when the text is very short or already correct — use an empty array for corrections, strengths or nextFocus when you have nothing to add, and still give scores and a summary. Scores are integers from 0 to 100. Give at most three strengths and three nextFocus items.\n\nCritical rule for offsets: charStart and charEnd are JavaScript string offsets into the exact learner text below, and original MUST equal learnerText.slice(charStart, charEnd) character for character. Count the offsets carefully — a correction whose offsets do not match its original text is discarded.\n\nTopic: ${text(input.topic, 300)}\n${metrics ? `Local speaking metrics (do not invent audio facts): ${JSON.stringify(metrics)}\n` : ''}Learner text:\n${learnerText}`
+  return `You are an expert, encouraging ${profile.name} teacher. Review the learner's ${kind} at CEFR ${level}. The learner is writing in ${profile.name}; judge it by ${profile.name} rules only. Correct only genuine issues; do not rewrite for style alone.\n\n${profile.feedbackLanguage}\n\nWords that do not exist are mistakes, and the most important ones to catch. If a word is not a real ${profile.name} word - invented, misspelt beyond recognition, or typed at random - correct it to the word the learner most likely meant, with errorType "spelling" and severity "major". If you cannot tell what they meant, say so in the explanation and correct it to a sensible word. Never pass over a non-word in silence, and never treat one as advanced vocabulary. If much of the text is not real ${profile.name}, scores must be very low, the summary must say plainly that the text could not be understood, and strengths must be empty rather than invented.\n\nReturn a JSON object with exactly this shape:\n{"correctedText":"the learner's full text with every correction applied","improvedText":"the same text rewritten at its best","corrections":[{"original":"string","corrected":"string","explanation":"plain language","errorType":"${profile.errorTypes}","severity":"minor|moderate|major","charStart":0,"charEnd":0}],"scores":{"overall":0,"grammar":0,"vocabulary":0,"fluency":0},"summary":"1-2 specific encouraging sentences","strengths":["string"],"nextFocus":["string"]}\n\ncorrectedText and improvedText are two different things and must not be the same string. correctedText fixes what is wrong and changes nothing else. improvedText shows what good looks like:\n- Keep every idea the learner had, in the same order. Add no new facts, opinions or examples.\n- Stay within about 10 percent of the original length. This is a model of how they could have written it, not a longer essay.\n- Improve the STRUCTURE: join choppy sentences, vary sentence length, tighten word order, and make each sentence lead into the next.\n- Write it as a strong CEFR ${level} writer would - one realistic step above this learner, using structures they could reach for next time. Do not show off vocabulary far above ${level}; an unreachable model teaches nothing.\n\nEvery one of correctedText, improvedText, corrections, scores, summary, strengths and nextFocus is REQUIRED. Include all six even when the text is very short or already correct — use an empty array for corrections, strengths or nextFocus when you have nothing to add, and still give scores and a summary. Scores are integers from 0 to 100. Give at most three strengths and three nextFocus items.\n\nRule for offsets: charStart and charEnd are JavaScript string offsets into the exact learner text below, and "original" must be copied character for character from that text so it can be found again. Get the quote exactly right; the offsets are a hint and will be corrected from the quote if they are slightly out. A correction whose "original" does not appear in the text at all is discarded, so never quote words the learner did not write.\n\nTopic: ${text(input.topic, 300)}\n${metrics ? `Local speaking metrics (do not invent audio facts): ${JSON.stringify(metrics)}\n` : ''}Learner text:\n${learnerText}`
 }
 
 /**
@@ -279,6 +279,34 @@ function promptFor(action: Action, input: Record<string, unknown>): string {
   }
 }
 
+/**
+ * Where in the source text a correction really belongs.
+ *
+ * Character offsets are the one thing a language model is genuinely bad at:
+ * it counts by tokens, not by UTF-16 code units, and it drifts by a few
+ * characters over a long text. The old rule - offsets must match exactly or
+ * the correction is thrown away - meant a model that found ten real mistakes
+ * and miscounted could leave the learner reading "no mistakes found".
+ *
+ * Silently deleting correct feedback is far worse than highlighting it a few
+ * characters off, so the quoted text is trusted over the arithmetic: find the
+ * quote, and prefer the occurrence closest to where the model thought it was.
+ * Only a quote that does not appear in the text at all is discarded, because
+ * that is the model inventing something the learner never wrote.
+ */
+function locate(source: string, original: string, claimedStart: number): [number, number] | null {
+  if (!original) return null
+  if (source.slice(claimedStart, claimedStart + original.length) === original) {
+    return [claimedStart, claimedStart + original.length]
+  }
+
+  let best = -1
+  for (let at = source.indexOf(original); at !== -1; at = source.indexOf(original, at + 1)) {
+    if (best === -1 || Math.abs(at - claimedStart) < Math.abs(best - claimedStart)) best = at
+  }
+  return best === -1 ? null : [best, best + original.length]
+}
+
 function validateReview(value: unknown, source: string) {
   const review = value as Record<string, unknown>
   const corrections = Array.isArray(review.corrections) ? review.corrections : []
@@ -295,24 +323,23 @@ function validateReview(value: unknown, source: string) {
         : '',
     corrections: corrections.slice(0, 30).flatMap((item) => {
       const correction = item as Record<string, unknown>
-      const charStart = Number(correction.charStart)
-      const charEnd = Number(correction.charEnd)
       const original = text(correction.original, 500)
       const errorType = text(correction.errorType, 40)
       const severity = text(correction.severity, 20)
-      if (
-        !Number.isInteger(charStart) || !Number.isInteger(charEnd) || charStart < 0 || charEnd <= charStart ||
-        charEnd > source.length || source.slice(charStart, charEnd) !== original || !ERROR_TYPES.has(errorType) ||
-        !SEVERITIES.has(severity)
-      ) return []
+      if (!ERROR_TYPES.has(errorType) || !SEVERITIES.has(severity)) return []
+
+      const claimed = Number(correction.charStart)
+      const span = locate(source, original, Number.isInteger(claimed) && claimed >= 0 ? claimed : 0)
+      if (!span) return []
+
       return [{
         original,
         corrected: text(correction.corrected, 500),
         explanation: text(correction.explanation, 700),
         errorType,
         severity,
-        charStart,
-        charEnd,
+        charStart: span[0],
+        charEnd: span[1],
       }]
     }),
     scores: {
