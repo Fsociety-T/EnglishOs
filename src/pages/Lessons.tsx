@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, GraduationCap, PenLine, Target } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, SectionHeading, Spinner, Tabs } from '@/components/ui'
-import { useLanguage } from '@/i18n'
+import { useLanguage, useT } from '@/i18n'
 import { useLessons, useSessions } from '@/hooks/useContent'
 import { ERROR_TONE } from '@/lib/errorStyles'
 import { cn } from '@/lib/utils'
@@ -13,6 +13,7 @@ type Filter = 'all' | LessonStatus
 
 export default function Lessons() {
   const { language } = useLanguage()
+  const t = useT()
   const [filter, setFilter] = useState<Filter>('all')
 
   const { data: lessons, loading } = useLessons()
@@ -36,22 +37,20 @@ export default function Lessons() {
   const all = lessons ?? []
   const visible = filter === 'all' ? all : all.filter((l) => l.status === filter)
 
-  if (loading) return <Spinner label="Loading your lessons..." />
+  if (loading) return <Spinner label={t('lessons.loading')} />
 
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Your grammar lessons</h1>
-        <p className="mt-1 text-sm text-fg-muted">
-          Not a general course. Every lesson here exists because you made that mistake.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('lessons.title')}</h1>
+        <p className="mt-1 text-sm text-fg-muted">{t('lessons.subtitle')}</p>
       </header>
 
       {weakAreas.length > 0 && (
         <Card>
           <SectionHeading
-            title="Where your mistakes come from"
-            subtitle="Across every session you have done."
+            title={t('lessons.weakAreas')}
+            subtitle={t('lessons.weakAreasSub')}
           />
           <div className="space-y-3">
             {weakAreas.map(({ type, count, percent }) => (
@@ -61,7 +60,7 @@ export default function Lessons() {
                     {ERROR_TYPE_LABEL[language][type]}
                   </span>
                   <span className="text-fg-faint">
-                    {count} {count === 1 ? 'time' : 'times'}
+                    {count === 1 ? t('lessons.once') : t('lessons.times', { count })}
                   </span>
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
@@ -79,13 +78,13 @@ export default function Lessons() {
       {all.length === 0 ? (
         <EmptyState
           icon={<GraduationCap className="size-6" />}
-          title="No lessons yet"
-          body="Lessons appear automatically after you practise. Write or speak about a topic, and the mistakes you make become the lessons you need."
+          title={t('lessons.emptyTitle')}
+          body={t('lessons.emptyBody')}
           action={
             <Link to="/write">
               <Button>
                 <PenLine className="size-4" />
-                Start writing
+                {t('dash.startWriting')}
               </Button>
             </Link>
           }
@@ -94,16 +93,16 @@ export default function Lessons() {
         <section>
           <Tabs
             tabs={[
-              { id: 'all', label: 'All', count: all.length },
-              { id: 'new', label: 'New', count: all.filter((l) => l.status === 'new').length },
+              { id: 'all', label: t('lessons.all'), count: all.length },
+              { id: 'new', label: t('lessons.new'), count: all.filter((l) => l.status === 'new').length },
               {
                 id: 'learning',
-                label: 'Learning',
+                label: t('lessons.learning'),
                 count: all.filter((l) => l.status === 'learning').length,
               },
               {
                 id: 'mastered',
-                label: 'Mastered',
+                label: t('lessons.mastered'),
                 count: all.filter((l) => l.status === 'mastered').length,
               },
             ]}
@@ -127,12 +126,12 @@ export default function Lessons() {
                     {lesson.status === 'mastered' ? (
                       <Badge tone="good">
                         <CheckCircle2 className="size-3" />
-                        Mastered
+                        {t('lessons.mastered')}
                       </Badge>
                     ) : lesson.status === 'learning' ? (
-                      <Badge tone="warn">Learning</Badge>
+                      <Badge tone="warn">{t('lessons.learning')}</Badge>
                     ) : (
-                      <Badge tone="violet">New</Badge>
+                      <Badge tone="violet">{t('lessons.new')}</Badge>
                     )}
                   </div>
 
@@ -146,7 +145,7 @@ export default function Lessons() {
 
                   <p className="mt-3 flex items-center gap-1.5 text-xs text-fg-faint">
                     <Target className="size-3.5" />
-                    {lesson.exercises.length} practice questions
+                    {t('lessons.questions', { count: lesson.exercises.length })}
                   </p>
                 </Card>
               </Link>
@@ -154,9 +153,7 @@ export default function Lessons() {
           </div>
 
           {visible.length === 0 && (
-            <p className="mt-6 text-center text-sm text-fg-faint">
-              Nothing in this group yet.
-            </p>
+            <p className="mt-6 text-center text-sm text-fg-faint">{t('lessons.emptyGroup')}</p>
           )}
         </section>
       )}

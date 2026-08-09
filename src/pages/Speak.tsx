@@ -6,7 +6,7 @@ import { useAudioRecorder } from '@/hooks/useAudioRecorder'
 import { speechRecognitionSupported, useSpeechRecognition } from '@/hooks/useSpeechRecognition'
 import { randomTopic, topicCategoriesFor, topicsFor } from '@/data/topics'
 import { computeFluencyMetrics, countWords } from '@/lib/text'
-import { useLanguage } from '@/i18n'
+import { useLanguage, useT } from '@/i18n'
 import { submitPractice } from '@/lib/session'
 import { cn, formatDuration } from '@/lib/utils'
 import type { Topic } from '@/types'
@@ -31,6 +31,7 @@ function Waveform({ levels, active }: { levels: number[]; active: boolean }) {
 export default function Speak() {
   const navigate = useNavigate()
   const { language } = useLanguage()
+  const t = useT()
   const [topic, setTopic] = useState<Topic | null>(null)
   const [category, setCategory] = useState('All')
   const [submitting, setSubmitting] = useState(false)
@@ -92,7 +93,7 @@ export default function Speak() {
       navigate(`/session/${session.id}`)
     } catch (err) {
       setSubmitError(
-        err instanceof Error ? err.message : 'Something went wrong. Your transcript is safe.',
+        err instanceof Error ? err.message : t('speak.failed'),
       )
       setSubmitting(false)
     }
@@ -114,7 +115,7 @@ export default function Speak() {
           className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition hover:text-fg"
         >
           <ArrowLeft className="size-4" />
-          Choose a different topic
+          {t('speak.changeTopic')}
         </button>
 
         <Card>
@@ -129,10 +130,7 @@ export default function Speak() {
         {!speechRecognitionSupported && (
           <div className="flex gap-3 rounded-xl border border-warn/30 bg-warn/15 px-4 py-3 text-sm text-warn">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-            <p className="leading-relaxed">
-              Your browser cannot make a live transcript. Chrome or Edge can. You can still record
-              and type what you said below, and it will be checked normally.
-            </p>
+            <p className="leading-relaxed">{t('speak.noSpeechApi')}</p>
           </div>
         )}
 
@@ -153,21 +151,21 @@ export default function Speak() {
           {!active ? (
             <Button onClick={handleStart} className="px-8 py-4 text-base">
               <Mic className="size-5" />
-              {finished ? 'Record again' : 'Start recording'}
+              {finished ? t('speak.recordAgain') : t('speak.startRecording')}
             </Button>
           ) : (
             <Button onClick={handleStop} variant="danger" className="px-8 py-4 text-base">
               <Square className="size-5" />
-              Stop
+              {t('speak.stop')}
             </Button>
           )}
 
           <p className="text-center text-sm text-fg-faint">
             {active
-              ? 'Listening. Speak naturally - aim for at least a minute.'
+              ? t('speak.listening')
               : finished
-                ? 'Check the transcript below, then get your feedback.'
-                : 'Press record and talk about the topic above.'}
+                ? t('speak.reviewTranscript')
+                : t('speak.pressRecord')}
           </p>
         </Card>
 
@@ -175,11 +173,9 @@ export default function Speak() {
         {(liveTranscript || finished) && (
           <section>
             <SectionHeading
-              title="Transcript"
+              title={t('speak.transcript')}
               subtitle={
-                finished
-                  ? 'Fix anything the transcription got wrong before checking.'
-                  : 'Updating as you speak.'
+                finished ? t('speak.transcriptFixable') : t('speak.transcriptLive')
               }
             />
             {finished ? (
@@ -187,13 +183,15 @@ export default function Speak() {
                 <textarea
                   value={editedTranscript}
                   onChange={(e) => setEditedTranscript(e.target.value)}
-                  placeholder="Type what you said, if the transcript is empty."
+                  placeholder={t('speak.transcriptPlaceholder')}
                   className="min-h-[25vh] w-full resize-y bg-transparent p-5 leading-relaxed text-fg outline-none placeholder:text-fg-faint"
                 />
                 <div className="border-t border-white/10 px-4 py-3 text-sm text-fg-faint">
-                  {wordCount} words &middot;{' '}
+                  {wordCount} {t('dash.words')} &middot;{' '}
                   {recorder.seconds > 0
-                    ? `${Math.round(wordCount / (recorder.seconds / 60))} words per minute`
+                    ? t('speak.wordsPerMinute', {
+                        count: Math.round(wordCount / (recorder.seconds / 60)),
+                      })
                     : '-'}
                 </div>
               </div>
@@ -220,19 +218,17 @@ export default function Speak() {
               {submitting ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  Checking...
+                  {t('speak.checking')}
                 </>
               ) : (
                 <>
                   <Sparkles className="size-4" />
-                  Check my speaking
+                  {t('speak.check')}
                 </>
               )}
             </Button>
             {wordCount < 10 && (
-              <span className="text-sm text-fg-faint">
-                Say or type at least 10 words to get feedback.
-              </span>
+              <span className="text-sm text-fg-faint">{t('speak.tooShort')}</span>
             )}
           </div>
         )}
@@ -244,29 +240,28 @@ export default function Speak() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Speaking practice</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('speak.title')}</h1>
         <p className="mt-1 text-sm text-fg-muted">
-          Record yourself talking about a topic. You get a transcript, your speed, your filler
-          words, and the same corrections as writing.
+          {t('speak.subtitle')}
         </p>
       </header>
 
       <Card className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-medium text-fg">Not sure what to talk about?</p>
-          <p className="mt-0.5 text-sm text-fg-faint">Let the app pick one for you.</p>
+          <p className="font-medium text-fg">{t('speak.noIdea')}</p>
+          <p className="mt-0.5 text-sm text-fg-faint">{t('speak.noIdeaSub')}</p>
         </div>
         <Button onClick={() => setTopic(randomTopic(language))}>
           <Shuffle className="size-4" />
-          Surprise me
+          {t('speak.surprise')}
         </Button>
       </Card>
 
       <section>
-        <SectionHeading title="Choose a topic" />
+        <SectionHeading title={t('speak.chooseTopic')} />
         <Tabs
           tabs={[
-            { id: 'All', label: 'All', count: allTopics.length },
+            { id: 'All', label: t('lessons.all'), count: allTopics.length },
             ...topicCategoriesFor(language).map((c) => ({
               id: c,
               label: c,
