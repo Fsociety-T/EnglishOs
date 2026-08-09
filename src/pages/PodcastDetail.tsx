@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -13,6 +13,7 @@ import {
 import { Badge, Button, Card, EmptyState, SectionHeading, Spinner, Tabs } from '@/components/ui'
 import { useLanguage, useT } from '@/i18n'
 import { useAsync } from '@/hooks/useAsync'
+import { useYouTubePlayer } from '@/hooks/useYouTubePlayer'
 import { formatTimestamp, parseMediaUrl } from '@/lib/media'
 import { newId } from '@/lib/utils'
 import { ai } from '@/services/ai'
@@ -20,6 +21,12 @@ import type { PhraseExplanation } from '@/services/ai/types'
 import { useRepo } from '@/services/db'
 import type { StringKey } from '@/i18n/strings'
 import type { PodcastStatus } from '@/types'
+
+/** Watched this far counts as watched. Credits and outros are not the lesson. */
+const FINISHED_PERCENT = 90
+
+/** How often the position is written back while playing. */
+const SAVE_EVERY_SECONDS = 15
 
 const STATUS_TABS: { id: PodcastStatus; labelKey: StringKey }[] = [
   { id: 'to-watch', labelKey: 'pod.toWatch' },
@@ -42,6 +49,7 @@ export default function PodcastDetail() {
   const [explaining, setExplaining] = useState(false)
   const [explanation, setExplanation] = useState<PhraseExplanation | null>(null)
   const [explainError, setExplainError] = useState<string | null>(null)
+  const [finishHint, setFinishHint] = useState(false)
 
   const { data: podcast, loading, reload } = useAsync(
     () => (id ? repo.getPodcast(id) : Promise.resolve(null)),
@@ -51,6 +59,54 @@ export default function PodcastDetail() {
     () => (id ? repo.listNotes(id) : Promise.resolve([])),
     [id],
   )
+
+  // Parsed before the early returns because the player is a hook. An empty
+  // string yields the "no embed" shape, which is safe while loading.
+  const media = parseMediaUrl(podcast?.url ?? '')
+  const isYouTube = media.platform === 'youtube' && Boolean(media.embedId)
+  const player = useYouTubePlayer(isYouTube ? media.embedId : null)
+  const savedAtRef = useRef(0)
+  const resumedRef = useRef(false)
+
+  const watchedSeconds = Math.max(podcast?.progressSeconds ?? 0, player.currentTime)
+  const watchedPercent =
+    player.duration > 0 ? Math.min(100, Math.round((watchedSeconds / player.duration) * 100)) : null
+  /** Near enough the end: nobody sits through the outro, and they should not have to. */
+  const finished = watchedPercent !== null && watchedPercent >= FINISHED_PERCENT
+
+  // Pick up where they stopped, once, rather than starting the hour again.
+  useEffect(() => {
+    if (!player.ready || resumedRef.current || !podcast) return
+    resumedRef.current = true
+    const at = podcast.progressSeconds
+    if (at > 10 && (player.duration === 0 || at < player.duration * 0.95)) player.seekTo(at)
+  }, [player, podcast])
+
+  // Remember the position, but not on every tick - that would be a write to
+  // the database ten times a second.
+  useEffect(() => {
+    if (!podcast || !player.playing) return
+    const at = Math.floor(player.currentTime)
+    if (at - savedAtRef.current < SAVE_EVERY_SECONDS) return
+    savedAtRef.current = at
+    void repo.updatePodcast(podcast.id, { progressSeconds: at })
+  }, [player.currentTime, player.playing, podcast, repo])
+
+  // The status now follows what actually happened, instead of waiting to be
+  // clicked: playing it starts it, reaching the end finishes it.
+  useEffect(() => {
+    if (!podcast || !isYouTube) return
+    if (finished && podcast.status !== 'done') {
+      void repo
+        .updatePodcast(podcast.id, {
+          status: 'done',
+          progressSeconds: Math.floor(watchedSeconds),
+        })
+        .then(reload)
+    } else if (player.playing && podcast.status === 'to-watch') {
+      void repo.updatePodcast(podcast.id, { status: 'watching' }).then(reload)
+    }
+  }, [finished, player.playing, podcast, isYouTube, repo, reload, watchedSeconds])
 
   if (loading) return <Spinner label={t('common.loading')} />
 
@@ -66,8 +122,6 @@ export default function PodcastDetail() {
       </Card>
     )
   }
-
-  const media = parseMediaUrl(podcast.url)
 
   /** "12" means 12 minutes in; "12:30" means twelve and a half. */
   function parseStamp(raw: string): number | null {
@@ -196,21 +250,53 @@ export default function PodcastDetail() {
         </a>
       </header>
 
-      <div className="max-w-sm">
+      <div className="max-w-sm space-y-2">
         <Tabs
           tabs={STATUS_TABS.map(({ id, labelKey }) => ({ id, label: t(labelKey) }))}
           active={podcast.status}
           onChange={async (status) => {
+            // Done has to be earned on a video we can actually measure.
+            // Anything we cannot track stays a free choice, or it could never
+            // be finished at all.
+            if (status === 'done' && isYouTube && !finished) {
+              setFinishHint(true)
+              return
+            }
+            setFinishHint(false)
             await repo.updatePodcast(podcast.id, { status })
             reload()
           }}
         />
+        {isYouTube && watchedPercent !== null && (
+          <div>
+            <div className="h-1 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-neon transition-[width] duration-500"
+                style={{ width: `${watchedPercent}%` }}
+              />
+            </div>
+            <p className="mt-1 text-xs text-fg-faint">
+              {t('pod.watched', { percent: watchedPercent })}
+            </p>
+          </div>
+        )}
+        {finishHint && (
+          <p className="rounded-xl border border-warn/30 bg-warn/10 px-3 py-2 text-xs leading-relaxed text-warn">
+            {t('pod.finishFirst', { percent: watchedPercent ?? 0 })}
+          </p>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
         {/* Player */}
         <div>
-          {media.embedUrl ? (
+          {isYouTube ? (
+            <div className="overflow-hidden rounded-glass border border-white/10">
+              <div className="aspect-video w-full">
+                <div ref={player.containerRef} className="size-full" />
+              </div>
+            </div>
+          ) : media.embedUrl ? (
             <div className="overflow-hidden rounded-glass border border-white/10">
               <iframe
                 src={media.embedUrl}
