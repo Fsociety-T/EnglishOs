@@ -5,8 +5,9 @@ import type { AiProvider, LessonDraft, Review, ReviewSpeakingInput, ReviewWritin
 type Action = 'review-writing' | 'review-speaking' | 'generate-lessons' | 'suggest-vocabulary'
 
 /**
- * Calls the protected Supabase Edge Function, never Claude directly. Keeping
- * this request small and typed means the Anthropic key cannot reach a browser.
+ * Calls the protected Supabase Edge Function, never the model provider
+ * directly. Keeping this request small and typed means the provider API key
+ * cannot reach a browser.
  */
 async function invoke<T>(action: Action, input: unknown): Promise<T> {
   const { data, error } = await requireSupabase().functions.invoke('claude-review', {
@@ -19,7 +20,7 @@ async function invoke<T>(action: Action, input: unknown): Promise<T> {
 }
 
 export const claudeProvider: AiProvider = {
-  name: 'Claude AI',
+  name: 'AI reviewer',
   isReal: true,
 
   reviewWriting(input: ReviewWritingInput): Promise<Review> {
@@ -35,7 +36,7 @@ export const claudeProvider: AiProvider = {
       Array<Omit<LessonDraft, 'exercises'> & { exercises: Array<Omit<LessonDraft['exercises'][number], 'id'>> }>
     >('generate-lessons', input)
 
-    // Exercise IDs only identify UI choices and are not meaningful to Claude.
+    // Exercise IDs only identify UI choices and are not meaningful to the model.
     return lessons.map((lesson) => ({
       ...lesson,
       exercises: lesson.exercises.map((exercise) => ({ ...exercise, id: newId('ex') })),

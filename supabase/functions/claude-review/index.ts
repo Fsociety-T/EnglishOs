@@ -62,16 +62,117 @@ function parseModelJson(raw: string): unknown {
 function reviewPrompt(kind: 'writing' | 'speaking', input: Record<string, unknown>): string {
   const learnerText = text(kind === 'writing' ? input.text : input.transcript, 12_000)
   const metrics = kind === 'speaking' ? input.metrics : undefined
-  return `You are an expert, encouraging English teacher. Review the learner's ${kind} at CEFR ${text(input.level, 8)}. Correct only genuine issues; do not rewrite for style alone. Every correction's charStart and charEnd must be JavaScript string offsets into the exact learner text, and original must equal text.slice(charStart, charEnd). Return a single JSON object and nothing else.\n\nRequired schema:\n{"correctedText":"string","corrections":[{"original":"string","corrected":"string","explanation":"plain English","errorType":"verb-tense|article|preposition|word-order|subject-verb-agreement|plural|spelling|collocation|punctuation|word-choice|other","severity":"minor|moderate|major","charStart":0,"charEnd":0}],"scores":{"overall":0,"grammar":0,"vocabulary":0,"fluency":0},"summary":"1-2 specific encouraging sentences","strengths":["string"],"nextFocus":["string"]}\n\nTopic: ${text(input.topic, 300)}\n${metrics ? `Local speaking metrics (do not invent audio facts): ${JSON.stringify(metrics)}\n` : ''}Learner text:\n${learnerText}`
+  return `You are an expert, encouraging English teacher. Review the learner's ${kind} at CEFR ${text(input.level, 8)}. Correct only genuine issues; do not rewrite for style alone. Return a JSON object.\n\nCritical rule for offsets: charStart and charEnd are JavaScript string offsets into the exact learner text below, and original MUST equal learnerText.slice(charStart, charEnd) character for character. Count the offsets carefully — a correction whose offsets do not match its original text is discarded. Scores are 0-100. Write the summary as 1-2 specific, encouraging sentences, and give at most three strengths and three nextFocus items.\n\nTopic: ${text(input.topic, 300)}\n${metrics ? `Local speaking metrics (do not invent audio facts): ${JSON.stringify(metrics)}\n` : ''}Learner text:\n${learnerText}`
 }
 
 function lessonsPrompt(input: Record<string, unknown>): string {
   const corrections = Array.isArray(input.corrections) ? input.corrections.slice(0, 20) : []
-  return `You are an English teacher creating concise personalised mini-lessons for CEFR ${text(input.level, 8)}. Use the learner's actual mistakes. Return one to three lessons, grouped by the most important error types, as a JSON array only.\n\nRequired schema:\n[{"errorType":"one allowed error type","title":"string","body":"short markdown explanation","examples":[{"wrong":"string","right":"string","note":"optional string"}],"exercises":[{"question":"string","choices":["string","string","string","string"],"answerIndex":0,"explanation":"string"}],"sourceSessionId":"string or null","sourceSentence":"string or null"}]\n\nCorrections: ${JSON.stringify(corrections)}\nSource text: ${text(input.sourceText, 12_000)}`
+  return `You are an English teacher creating concise personalised mini-lessons for CEFR ${text(input.level, 8)}. Use the learner's actual mistakes. Return one to three lessons, grouped by the most important error types, inside a JSON object with a "lessons" array.\n\nUse an empty string for "note" when there is nothing to add, and null for a source field you cannot determine.\n\nCorrections: ${JSON.stringify(corrections)}\nSource text: ${text(input.sourceText, 12_000)}`
 }
 
 function vocabularyPrompt(input: Record<string, unknown>): string {
-  return `Suggest five useful English vocabulary words for a CEFR ${text(input.level, 8)} learner based on the text below. Do not repeat words already used in the text. Return a JSON array only.\n\nRequired schema:\n[{"word":"string","phonetic":"optional IPA string","partOfSpeech":"string","definition":"clear short definition","example":"natural example sentence"}]\n\nText:\n${text(input.text, 12_000)}`
+  return `Suggest five useful English vocabulary words for a CEFR ${text(input.level, 8)} learner based on the text below. Do not repeat words already used in the text. Return a JSON object with a "words" array.\n\nUse an empty string for "phonetic" if you are unsure of the IPA.\n\nText:\n${text(input.text, 12_000)}`
+}
+
+/**
+ * Groq enforces these with constrained decoding (strict mode), so the model
+ * cannot emit a shape the validators below would reject outright. The
+ * validators still run: a schema can guarantee an integer charStart, but not
+ * that it points at the right characters.
+ *
+ * Strict mode rules: every property must be listed in `required`, and every
+ * object needs `additionalProperties: false`. Fields that are conceptually
+ * optional are required here and carry "" or null instead.
+ */
+const str = { type: 'string' } as const
+// anyOf rather than `type: ['string', 'null']`: Groq documents anyOf as
+// supported in strict mode, the array form of `type` is not listed.
+const nullableStr = { anyOf: [{ type: 'string' }, { type: 'null' }] } as const
+const score100 = { type: 'integer', minimum: 0, maximum: 100 } as const
+
+function object(properties: Record<string, unknown>) {
+  return {
+    type: 'object',
+    properties,
+    required: Object.keys(properties),
+    additionalProperties: false,
+  }
+}
+
+const REVIEW_SCHEMA = object({
+  correctedText: str,
+  corrections: {
+    type: 'array',
+    items: object({
+      original: str,
+      corrected: str,
+      explanation: str,
+      errorType: { type: 'string', enum: [...ERROR_TYPES] },
+      severity: { type: 'string', enum: [...SEVERITIES] },
+      charStart: { type: 'integer', minimum: 0 },
+      charEnd: { type: 'integer', minimum: 0 },
+    }),
+  },
+  scores: object({
+    overall: score100,
+    grammar: score100,
+    vocabulary: score100,
+    fluency: score100,
+  }),
+  summary: str,
+  strengths: { type: 'array', items: str },
+  nextFocus: { type: 'array', items: str },
+})
+
+const LESSONS_SCHEMA = object({
+  lessons: {
+    type: 'array',
+    items: object({
+      errorType: { type: 'string', enum: [...ERROR_TYPES] },
+      title: str,
+      body: str,
+      examples: {
+        type: 'array',
+        items: object({ wrong: str, right: str, note: str }),
+      },
+      exercises: {
+        type: 'array',
+        items: object({
+          question: str,
+          choices: { type: 'array', items: str },
+          answerIndex: { type: 'integer', minimum: 0 },
+          explanation: str,
+        }),
+      },
+      sourceSessionId: nullableStr,
+      sourceSentence: nullableStr,
+    }),
+  },
+})
+
+const VOCABULARY_SCHEMA = object({
+  words: {
+    type: 'array',
+    items: object({
+      word: str,
+      phonetic: str,
+      partOfSpeech: str,
+      definition: str,
+      example: str,
+    }),
+  },
+})
+
+function schemaFor(action: Action): { name: string; schema: unknown } {
+  switch (action) {
+    case 'review-writing':
+    case 'review-speaking':
+      return { name: 'review', schema: REVIEW_SCHEMA }
+    case 'generate-lessons':
+      return { name: 'lessons', schema: LESSONS_SCHEMA }
+    case 'suggest-vocabulary':
+      return { name: 'vocabulary', schema: VOCABULARY_SCHEMA }
+  }
 }
 
 function promptFor(action: Action, input: Record<string, unknown>): string {
@@ -197,41 +298,54 @@ Deno.serve(async (request) => {
       return respond({ error: 'That request is too large.' }, 400, origin)
     }
 
-    const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
+    const apiKey = Deno.env.get('GROQ_API_KEY')
     if (!apiKey) return respond({ error: 'AI feedback is not configured yet.' }, 503, origin)
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const { name, schema } = schemaFor(action)
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: Deno.env.get('ANTHROPIC_MODEL') ?? 'claude-sonnet-4-20250514',
-        max_tokens: action === 'generate-lessons' ? 2_500 : 1_500,
+        model: Deno.env.get('GROQ_MODEL') ?? 'openai/gpt-oss-120b',
+        max_completion_tokens: action === 'generate-lessons' ? 2_500 : 1_500,
         temperature: 0.2,
+        response_format: {
+          type: 'json_schema',
+          json_schema: { name, strict: true, schema },
+        },
         messages: [{ role: 'user', content: promptFor(action, body.input as Record<string, unknown>) }],
       }),
     })
     if (!response.ok) {
-      console.error('Anthropic request failed:', response.status)
-      return respond({ error: 'Claude could not review this just now. Please try again.' }, 502, origin)
+      console.error('Groq request failed:', response.status, await response.text())
+      return respond({ error: 'The reviewer could not check this just now. Please try again.' }, 502, origin)
     }
 
-    const result = await response.json() as { content?: Array<{ type?: string; text?: string }> }
-    const raw = result.content?.find((part) => part.type === 'text')?.text
-    if (!raw) return respond({ error: 'Claude returned an empty response. Please try again.' }, 502, origin)
+    const result = await response.json() as {
+      choices?: Array<{ message?: { content?: string }; finish_reason?: string }>
+    }
+    const choice = result.choices?.[0]
+    const raw = choice?.message?.content
+    if (!raw) return respond({ error: 'The reviewer returned an empty response. Please try again.' }, 502, origin)
+    // A length cut-off yields valid-looking but truncated JSON; fail loudly
+    // rather than silently returning a half-finished review.
+    if (choice?.finish_reason === 'length') {
+      console.error('Groq response truncated by max_completion_tokens')
+      return respond({ error: 'That was too long to review in one go. Try a shorter piece.' }, 502, origin)
+    }
 
-    const parsed = parseModelJson(raw)
+    const parsed = parseModelJson(raw) as Record<string, unknown>
     const input = body.input as Record<string, unknown>
     const data = action === 'review-writing'
       ? validateReview(parsed, text(input.text, 12_000))
       : action === 'review-speaking'
         ? validateReview(parsed, text(input.transcript, 12_000))
         : action === 'generate-lessons'
-          ? validateLessons(parsed)
-          : validateVocabulary(parsed)
+          ? validateLessons(parsed?.lessons)
+          : validateVocabulary(parsed?.words)
     return respond({ data }, 200, origin)
   } catch (error) {
     console.error('claude-review failed:', error instanceof Error ? error.message : 'Unknown error')
