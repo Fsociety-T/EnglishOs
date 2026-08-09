@@ -16,6 +16,11 @@ create table if not exists public.profiles (
   language            text        not null default 'en' check (language in ('en','fr')),
   level               text        not null default 'B1'
                         check (level in ('A1','A2','B1','B2','C1','C2')),
+  -- Last *measured* levels, kept apart from `level` so editing the setting by
+  -- hand never overwrites a measurement. Null means never tested, which is a
+  -- different thing from B1.
+  writing_level       text        check (writing_level in ('A1','A2','B1','B2','C1','C2')),
+  speaking_level      text        check (speaking_level in ('A1','A2','B1','B2','C1','C2')),
   daily_goal_minutes  integer     not null default 20 check (daily_goal_minutes between 1 and 600),
   created_at          timestamptz not null default now()
 );
@@ -41,6 +46,10 @@ create table if not exists public.sessions (
   strengths         jsonb       not null default '[]'::jsonb,
   next_focus        jsonb       not null default '[]'::jsonb,
   metrics           jsonb,
+  -- Placement runs through the ordinary review pipeline, so these two columns
+  -- are the only thing separating a placement sample from normal practice.
+  is_placement      boolean     not null default false,
+  estimated_level   text        check (estimated_level in ('A1','A2','B1','B2','C1','C2')),
   created_at        timestamptz not null default now()
 );
 create index if not exists sessions_user_created_idx
@@ -158,6 +167,44 @@ begin
     alter table public.vocabulary
       add constraint vocabulary_user_id_language_word_key unique (user_id, language, word);
   end if;
+end $$;
+
+-- ------------------------------------------------ placement backfill (v3) --
+-- The placement test arrived after the French version. Same reasoning as the
+-- block above: `create table if not exists` does nothing to a table that is
+-- already there, so an existing project gets these columns here.
+--
+-- writing_level and speaking_level are deliberately nullable with no default.
+-- Null reads as "never tested", which is the truth for every account that
+-- existed before the test did - defaulting them to B1 would invent a
+-- measurement that never happened.
+do $$
+begin
+  alter table public.profiles add column if not exists writing_level text;
+  alter table public.profiles add column if not exists speaking_level text;
+  alter table public.sessions add column if not exists is_placement boolean not null default false;
+  alter table public.sessions add column if not exists estimated_level text;
+end $$;
+
+do $$
+declare
+  spec record;
+begin
+  for spec in
+    select * from (values
+      ('profiles', 'writing_level'),
+      ('profiles', 'speaking_level'),
+      ('sessions', 'estimated_level')
+    ) as t(tbl, col)
+  loop
+    begin
+      execute format(
+        'alter table public.%I add constraint %I check (%I in (''A1'',''A2'',''B1'',''B2'',''C1'',''C2''))',
+        spec.tbl, spec.tbl || '_' || spec.col || '_check', spec.col);
+    exception
+      when duplicate_object then null;
+    end;
+  end loop;
 end $$;
 
 -- Check constraints are added separately: each is skipped if already present.

@@ -6,7 +6,7 @@ import { signOut, useAuth } from '@/hooks/useAuth'
 import { useLanguage } from '@/i18n'
 import { ai } from '@/services/ai'
 import { useRepo } from '@/services/db'
-import { CEFR_LEVELS, LANGUAGE_NAME, LEARNING_LANGUAGES } from '@/types'
+import { CEFR_LEVELS, DEFAULT_PROFILE, LANGUAGE_NAME, LEARNING_LANGUAGES } from '@/types'
 import type { CefrLevel, LearningLanguage } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -33,6 +33,11 @@ export default function Settings() {
 
   async function save() {
     await repo.saveProfile({
+      // Spread the loaded profile first: this form does not own every field.
+      // Rebuilding the profile from the inputs alone would silently erase the
+      // measured writing and speaking levels every time someone renamed
+      // themselves.
+      ...(profile ?? DEFAULT_PROFILE),
       displayName: name.trim() || t('settings.namePlaceholder'),
       language,
       level,
