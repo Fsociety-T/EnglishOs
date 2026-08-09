@@ -25,6 +25,7 @@ const en = {
   'nav.speak': 'Speak',
   'nav.lessons': 'Lessons',
   'nav.vocabulary': 'Words',
+  'nav.history': 'History',
   'nav.podcasts': 'Podcasts',
   'nav.progress': 'Progress',
   'nav.settings': 'Settings',
@@ -143,6 +144,20 @@ const en = {
   'prog.levelNone':
     'You have not taken the writing test yet, so your level is a setting rather than a measurement.',
   'prog.takeTest': 'Find my level',
+
+  /* ------------------------------------------------------------- history -- */
+  'history.loading': 'Loading your history...',
+  'history.title': 'Everything you have done',
+  'history.subtitle':
+    'Every piece you have written and every recording, oldest still here. Reading something from a month ago and wincing is the clearest sign of progress there is.',
+  'history.all': 'All',
+  'history.placement': 'Level test',
+  'history.mistakeRate': '{rate} mistakes per 100 words',
+  'history.emptyTitle': 'Nothing here yet',
+  'history.emptyBody':
+    'Once you have written or recorded something, it stays here for good - so you can come back and see how differently you would write it now.',
+  'history.emptyGroup': 'Nothing of that kind yet.',
+  'history.seeAll': 'See everything',
 
   /* -------------------------------------------------------- session view -- */
   'session.loading': 'Loading session...',
@@ -479,6 +494,7 @@ const fr: Record<StringKey, string> = {
   'nav.speak': 'Parler',
   'nav.lessons': 'Leçons',
   'nav.vocabulary': 'Mots',
+  'nav.history': 'Historique',
   'nav.podcasts': 'Podcasts',
   'nav.progress': 'Progrès',
   'nav.settings': 'Paramètres',
@@ -603,6 +619,20 @@ const fr: Record<StringKey, string> = {
   'prog.levelNone':
     'Vous n’avez pas encore passé le test d’écriture : votre niveau est un réglage, pas une mesure.',
   'prog.takeTest': 'Évaluer mon niveau',
+
+  /* ------------------------------------------------------------- history -- */
+  'history.loading': 'Chargement de votre historique...',
+  'history.title': 'Tout ce que vous avez fait',
+  'history.subtitle':
+    'Chaque texte écrit et chaque enregistrement, les plus anciens compris. Relire un texte d’il y a un mois et grimacer est le signe de progrès le plus clair qui soit.',
+  'history.all': 'Tout',
+  'history.placement': 'Test de niveau',
+  'history.mistakeRate': '{rate} erreurs pour 100 mots',
+  'history.emptyTitle': 'Rien pour l’instant',
+  'history.emptyBody':
+    'Dès que vous aurez écrit ou enregistré quelque chose, cela restera ici pour de bon - pour revenir voir à quel point vous l’écririez différemment aujourd’hui.',
+  'history.emptyGroup': 'Rien de ce type pour l’instant.',
+  'history.seeAll': 'Voir tout',
 
   /* -------------------------------------------------------- session view -- */
   'session.loading': 'Chargement de la session...',

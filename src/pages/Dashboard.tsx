@@ -162,7 +162,14 @@ export default function Dashboard() {
       {/* Continue */}
       {lastSession && (
         <section>
-          <SectionHeading title={t('dash.continue')} />
+          <SectionHeading
+            title={t('dash.continue')}
+            action={
+              <Link to="/history" className="text-sm text-fg-muted transition hover:text-fg">
+                {t('history.seeAll')}
+              </Link>
+            }
+          />
           <Link to={`/session/${lastSession.id}`} className="block">
             <Card className="transition hover:bg-white/10">
               <div className="flex items-center justify-between gap-4">
