@@ -62,16 +62,16 @@ function parseModelJson(raw: string): unknown {
 function reviewPrompt(kind: 'writing' | 'speaking', input: Record<string, unknown>): string {
   const learnerText = text(kind === 'writing' ? input.text : input.transcript, 12_000)
   const metrics = kind === 'speaking' ? input.metrics : undefined
-  return `You are an expert, encouraging English teacher. Review the learner's ${kind} at CEFR ${text(input.level, 8)}. Correct only genuine issues; do not rewrite for style alone. Return a JSON object.\n\nCritical rule for offsets: charStart and charEnd are JavaScript string offsets into the exact learner text below, and original MUST equal learnerText.slice(charStart, charEnd) character for character. Count the offsets carefully — a correction whose offsets do not match its original text is discarded. Scores are 0-100. Write the summary as 1-2 specific, encouraging sentences, and give at most three strengths and three nextFocus items.\n\nTopic: ${text(input.topic, 300)}\n${metrics ? `Local speaking metrics (do not invent audio facts): ${JSON.stringify(metrics)}\n` : ''}Learner text:\n${learnerText}`
+  return `You are an expert, encouraging English teacher. Review the learner's ${kind} at CEFR ${text(input.level, 8)}. Correct only genuine issues; do not rewrite for style alone.\n\nReturn a JSON object with exactly this shape:\n{"correctedText":"the learner's full text with every correction applied","corrections":[{"original":"string","corrected":"string","explanation":"plain English","errorType":"verb-tense|article|preposition|word-order|subject-verb-agreement|plural|spelling|collocation|punctuation|word-choice|other","severity":"minor|moderate|major","charStart":0,"charEnd":0}],"scores":{"overall":0,"grammar":0,"vocabulary":0,"fluency":0},"summary":"1-2 specific encouraging sentences","strengths":["string"],"nextFocus":["string"]}\n\nEvery one of correctedText, corrections, scores, summary, strengths and nextFocus is REQUIRED. Include all six even when the text is very short or already correct — use an empty array for corrections, strengths or nextFocus when you have nothing to add, and still give scores and a summary. Scores are integers from 0 to 100. Give at most three strengths and three nextFocus items.\n\nCritical rule for offsets: charStart and charEnd are JavaScript string offsets into the exact learner text below, and original MUST equal learnerText.slice(charStart, charEnd) character for character. Count the offsets carefully — a correction whose offsets do not match its original text is discarded.\n\nTopic: ${text(input.topic, 300)}\n${metrics ? `Local speaking metrics (do not invent audio facts): ${JSON.stringify(metrics)}\n` : ''}Learner text:\n${learnerText}`
 }
 
 function lessonsPrompt(input: Record<string, unknown>): string {
   const corrections = Array.isArray(input.corrections) ? input.corrections.slice(0, 20) : []
-  return `You are an English teacher creating concise personalised mini-lessons for CEFR ${text(input.level, 8)}. Use the learner's actual mistakes. Return one to three lessons, grouped by the most important error types, inside a JSON object with a "lessons" array.\n\nUse an empty string for "note" when there is nothing to add, and null for a source field you cannot determine.\n\nCorrections: ${JSON.stringify(corrections)}\nSource text: ${text(input.sourceText, 12_000)}`
+  return `You are an English teacher creating concise personalised mini-lessons for CEFR ${text(input.level, 8)}. Use the learner's actual mistakes. Return one to three lessons, grouped by the most important error types.\n\nReturn a JSON object with exactly this shape:\n{"lessons":[{"errorType":"verb-tense|article|preposition|word-order|subject-verb-agreement|plural|spelling|collocation|punctuation|word-choice|other","title":"string","body":"short markdown explanation","examples":[{"wrong":"string","right":"string","note":"string"}],"exercises":[{"question":"string","choices":["string","string","string","string"],"answerIndex":0,"explanation":"string"}],"sourceSessionId":null,"sourceSentence":null}]}\n\nEvery field shown is REQUIRED on every lesson. Use an empty string for "note" when there is nothing to add, and null for a source field you cannot determine. answerIndex is the 0-based position of the correct choice.\n\nCorrections: ${JSON.stringify(corrections)}\nSource text: ${text(input.sourceText, 12_000)}`
 }
 
 function vocabularyPrompt(input: Record<string, unknown>): string {
-  return `Suggest five useful English vocabulary words for a CEFR ${text(input.level, 8)} learner based on the text below. Do not repeat words already used in the text. Return a JSON object with a "words" array.\n\nUse an empty string for "phonetic" if you are unsure of the IPA.\n\nText:\n${text(input.text, 12_000)}`
+  return `Suggest five useful English vocabulary words for a CEFR ${text(input.level, 8)} learner based on the text below. Do not repeat words already used in the text.\n\nReturn a JSON object with exactly this shape:\n{"words":[{"word":"string","phonetic":"IPA string","partOfSpeech":"string","definition":"clear short definition","example":"natural example sentence"}]}\n\nEvery field shown is REQUIRED on every word. Use an empty string for "phonetic" if you are unsure of the IPA.\n\nText:\n${text(input.text, 12_000)}`
 }
 
 /**
@@ -310,7 +310,12 @@ Deno.serve(async (request) => {
       },
       body: JSON.stringify({
         model: Deno.env.get('GROQ_MODEL') ?? 'openai/gpt-oss-120b',
-        max_completion_tokens: action === 'generate-lessons' ? 2_500 : 1_500,
+        // gpt-oss spends reasoning tokens out of this same budget, so these sit
+        // well above the size of the JSON itself. The model's ceiling is 65k.
+        max_completion_tokens: action === 'generate-lessons' ? 6_000 : 4_000,
+        // Structured extraction against an explicit schema — extra deliberation
+        // buys nothing here and eats both the token budget and the free quota.
+        reasoning_effort: 'low',
         temperature: 0.2,
         response_format: {
           type: 'json_schema',
