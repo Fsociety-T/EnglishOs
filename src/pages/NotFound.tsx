@@ -1,15 +1,17 @@
 import { Link } from 'react-router-dom'
 import { Button, EmptyState } from '@/components/ui'
+import { useT } from '@/i18n'
 
 export default function NotFound() {
+  const t = useT()
   return (
     <div className="mx-auto max-w-2xl pt-6">
       <EmptyState
-        title="That page does not exist"
-        body="The link may be old, or the page may have moved."
+        title={t('notFound.title')}
+        body={t('notFound.body')}
         action={
           <Link to="/">
-            <Button>Back to dashboard</Button>
+            <Button>{t('notFound.back')}</Button>
           </Link>
         }
       />

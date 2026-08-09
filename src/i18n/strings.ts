@@ -95,6 +95,72 @@ const en = {
   'settings.resetConfirm': 'Yes, delete everything',
   'settings.loading': 'Loading settings...',
 
+  /* ---------------------------------------------------------- vocabulary -- */
+  'vocab.loading': 'Loading your words...',
+  'vocab.title': 'Your word notebook',
+  'vocab.subtitle':
+    'Words you liked, reviewed at increasing intervals so they actually stay in memory.',
+  'vocab.addWord': 'Add a word',
+  'vocab.newWord': 'New word',
+  'vocab.wordPlaceholder': 'Word or phrase',
+  'vocab.definitionPlaceholder': 'What does it mean?',
+  'vocab.examplePlaceholder': 'A sentence using it (optional)',
+  'vocab.saveWord': 'Save word',
+  'vocab.dueOne': '1 word is ready to review',
+  'vocab.dueMany': '{count} words are ready to review',
+  'vocab.dueBlurb': 'A couple of minutes now is worth an hour of re-reading later.',
+  'vocab.startReview': 'Start review',
+  'vocab.emptyTitle': 'No words saved yet',
+  'vocab.emptyBody':
+    'Add a word above, or save one from a practice session or a podcast note. Every word you save gets scheduled for review automatically.',
+  'vocab.tabAll': 'All',
+  'vocab.tabDue': 'Due now',
+  'vocab.tabMastered': 'Mastered',
+  'vocab.mastered': 'Mastered',
+  'vocab.box': 'Box {box} of 5',
+  'vocab.from': 'from {source}',
+  'vocab.nothingDue': 'Nothing due right now. Come back tomorrow.',
+  'vocab.nothingHere': 'Nothing here yet.',
+  'vocab.reviewDone':
+    'Review finished. The words you found hard will come back tomorrow; the rest are scheduled further out.',
+  'vocab.backToWords': 'Back to my words',
+  'vocab.cardOf': 'Card {index} of {total}',
+  'vocab.stopReview': 'Stop review',
+  'vocab.tapToSee': 'Tap to see the meaning',
+  'vocab.again': 'Again',
+  'vocab.good': 'Good',
+  'vocab.easy': 'Easy',
+  'vocab.gradeHint': '“Again” brings it back tomorrow. “Easy” pushes it {interval}.',
+  'vocab.deleteWord': 'Delete {word}',
+  'srs.tomorrow': 'tomorrow',
+  'srs.inDays': 'in {count} days',
+  'srs.inMonths': 'in {count} months',
+
+  /* ------------------------------------------------------------ not found -- */
+  'notFound.title': 'That page does not exist',
+  'notFound.body': 'The link may be old, or the page may have moved.',
+  'notFound.back': 'Back to dashboard',
+
+  /* --------------------------------------------------------- lesson view -- */
+  'lesson.loading': 'Loading lesson...',
+  'lesson.notFound': 'That lesson could not be found.',
+  'lesson.backToLessons': 'Back to lessons',
+  'lesson.sideBySide': 'Right and wrong, side by side',
+  'lesson.quizTitle': 'Check you have it',
+  'lesson.startQuiz': 'Start the quiz',
+  'lesson.passed':
+    'Strong. This lesson is marked as mastered - it will stop appearing in your weak areas.',
+  'lesson.failed':
+    'Not quite yet. Read the examples again and retry - this stays in your learning list.',
+  'lesson.seeResult': 'See my result',
+  'lesson.nextQuestion': 'Next question',
+  'lesson.quizSub': '{count} quick questions.',
+  'lesson.masteryHint': 'Answer {count} or more correctly to mark this lesson as mastered.',
+  'lesson.tryAgain': 'Try again',
+  'lesson.questionOf': 'Question {index} of {total}',
+  'lesson.correctCount': '{count} correct',
+  'lesson.fromYourWriting': 'This came from your own writing',
+
   /* --------------------------------------------------------------- write -- */
   'write.title': 'Writing practice',
   'write.subtitle':
@@ -294,6 +360,73 @@ const fr: Record<StringKey, string> = {
   'settings.resetButton': 'Supprimer toutes mes données',
   'settings.resetConfirm': 'Oui, tout supprimer',
   'settings.loading': 'Chargement des paramètres...',
+
+  /* ---------------------------------------------------------- vocabulary -- */
+  'vocab.loading': 'Chargement de vos mots...',
+  'vocab.title': 'Votre carnet de mots',
+  'vocab.subtitle':
+    'Les mots qui vous ont plu, revus à intervalles croissants pour qu’ils restent vraiment en mémoire.',
+  'vocab.addWord': 'Ajouter un mot',
+  'vocab.newWord': 'Nouveau mot',
+  'vocab.wordPlaceholder': 'Mot ou expression',
+  'vocab.definitionPlaceholder': 'Qu’est-ce que cela veut dire ?',
+  'vocab.examplePlaceholder': 'Une phrase qui l’utilise (facultatif)',
+  'vocab.saveWord': 'Enregistrer le mot',
+  'vocab.dueOne': '1 mot est prêt à être révisé',
+  'vocab.dueMany': '{count} mots sont prêts à être révisés',
+  'vocab.dueBlurb': 'Deux minutes maintenant valent une heure de relecture plus tard.',
+  'vocab.startReview': 'Commencer la révision',
+  'vocab.emptyTitle': 'Aucun mot enregistré',
+  'vocab.emptyBody':
+    'Ajoutez un mot ci-dessus, ou enregistrez-en un depuis une session ou une note de podcast. Chaque mot enregistré est programmé pour révision automatiquement.',
+  'vocab.tabAll': 'Tous',
+  'vocab.tabDue': 'À réviser',
+  'vocab.tabMastered': 'Maîtrisés',
+  'vocab.mastered': 'Maîtrisé',
+  'vocab.box': 'Boîte {box} sur 5',
+  'vocab.from': 'depuis {source}',
+  'vocab.nothingDue': 'Rien à réviser pour l’instant. Revenez demain.',
+  'vocab.nothingHere': 'Rien ici pour l’instant.',
+  'vocab.reviewDone':
+    'Révision terminée. Les mots difficiles reviendront demain ; les autres sont programmés plus loin.',
+  'vocab.backToWords': 'Retour à mes mots',
+  'vocab.cardOf': 'Carte {index} sur {total}',
+  'vocab.stopReview': 'Arrêter la révision',
+  'vocab.tapToSee': 'Touchez pour voir le sens',
+  'vocab.again': 'À revoir',
+  'vocab.good': 'Bien',
+  'vocab.easy': 'Facile',
+  'vocab.gradeHint': '« À revoir » le ramène demain. « Facile » le repousse {interval}.',
+  'vocab.deleteWord': 'Supprimer {word}',
+  'srs.tomorrow': 'à demain',
+  'srs.inDays': 'dans {count} jours',
+  'srs.inMonths': 'dans {count} mois',
+
+  /* ------------------------------------------------------------ not found -- */
+  'notFound.title': 'Cette page n’existe pas',
+  'notFound.body': 'Le lien est peut-être ancien, ou la page a été déplacée.',
+  'notFound.back': 'Retour au tableau de bord',
+
+  /* --------------------------------------------------------- lesson view -- */
+  'lesson.loading': 'Chargement de la leçon...',
+  'lesson.notFound': 'Cette leçon est introuvable.',
+  'lesson.backToLessons': 'Retour aux leçons',
+  'lesson.sideBySide': 'Le faux et le juste, côte à côte',
+  'lesson.quizTitle': 'Vérifiez que c’est acquis',
+  'lesson.startQuiz': 'Commencer le quiz',
+  'lesson.passed':
+    'Solide. Cette leçon est marquée comme maîtrisée - elle disparaîtra de vos points faibles.',
+  'lesson.failed':
+    'Pas encore tout à fait. Relisez les exemples et réessayez - elle reste dans vos leçons en cours.',
+  'lesson.seeResult': 'Voir mon résultat',
+  'lesson.nextQuestion': 'Question suivante',
+  'lesson.quizSub': '{count} questions rapides.',
+  'lesson.masteryHint':
+    'Répondez correctement à {count} questions ou plus pour marquer cette leçon comme maîtrisée.',
+  'lesson.tryAgain': 'Réessayer',
+  'lesson.questionOf': 'Question {index} sur {total}',
+  'lesson.correctCount': '{count} correctes',
+  'lesson.fromYourWriting': 'Cela vient de votre propre texte',
 
   /* --------------------------------------------------------------- write -- */
   'write.title': 'Expression écrite',

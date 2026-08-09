@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { BookMarked, Check, Layers, Plus, Trash2, X } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, SectionHeading, Spinner, Tabs } from '@/components/ui'
-import { useLanguage } from '@/i18n'
+import { useLanguage, useT } from '@/i18n'
 import { useVocabulary } from '@/hooks/useContent'
 import { describeInterval, dueWords, isMastered, nextBox, nextReviewDate } from '@/lib/srs'
 import type { ReviewGrade } from '@/lib/srs'
@@ -13,6 +13,7 @@ type Tab = 'all' | 'due' | 'mastered'
 
 function AddWordForm({ onAdded }: { onAdded: () => void }) {
   const repo = useRepo()
+  const t = useT()
   const { language } = useLanguage()
   const [open, setOpen] = useState(false)
   const [word, setWord] = useState('')
@@ -48,7 +49,7 @@ function AddWordForm({ onAdded }: { onAdded: () => void }) {
     return (
       <Button onClick={() => setOpen(true)}>
         <Plus className="size-4" />
-        Add a word
+        {t('vocab.addWord')}
       </Button>
     )
   }
@@ -59,10 +60,10 @@ function AddWordForm({ onAdded }: { onAdded: () => void }) {
   return (
     <Card className="w-full">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">New word</h3>
+        <h3 className="font-semibold">{t('vocab.newWord')}</h3>
         <button
           type="button"
-          aria-label="Cancel"
+          aria-label={t('common.cancel')}
           onClick={() => setOpen(false)}
           className="rounded-lg p-1 text-fg-muted hover:bg-white/5 hover:text-fg"
         >
@@ -73,26 +74,26 @@ function AddWordForm({ onAdded }: { onAdded: () => void }) {
         <input
           value={word}
           onChange={(e) => setWord(e.target.value)}
-          placeholder="Word or phrase"
+          placeholder={t('vocab.wordPlaceholder')}
           className={inputClass}
         />
         <input
           value={definition}
           onChange={(e) => setDefinition(e.target.value)}
-          placeholder="What does it mean?"
+          placeholder={t('vocab.definitionPlaceholder')}
           className={inputClass}
         />
         <input
           value={example}
           onChange={(e) => setExample(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && save()}
-          placeholder="A sentence using it (optional)"
+          placeholder={t('vocab.examplePlaceholder')}
           className={inputClass}
         />
       </div>
       <div className="mt-4">
         <Button onClick={save} disabled={!word.trim() || !definition.trim() || saving}>
-          Save word
+          {t('vocab.saveWord')}
         </Button>
       </div>
     </Card>
@@ -101,6 +102,7 @@ function AddWordForm({ onAdded }: { onAdded: () => void }) {
 
 function Flashcards({ words, onDone }: { words: VocabWord[]; onDone: () => void }) {
   const repo = useRepo()
+  const t = useT()
   const [index, setIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [correct, setCorrect] = useState(0)
@@ -123,12 +125,9 @@ function Flashcards({ words, onDone }: { words: VocabWord[]; onDone: () => void 
         <p className="text-4xl font-bold text-gradient">
           {correct}/{words.length}
         </p>
-        <p className="mt-3 leading-relaxed text-fg-muted">
-          Review finished. The words you found hard will come back tomorrow; the rest are
-          scheduled further out.
-        </p>
+        <p className="mt-3 leading-relaxed text-fg-muted">{t('vocab.reviewDone')}</p>
         <div className="mt-5">
-          <Button onClick={onDone}>Back to my words</Button>
+          <Button onClick={onDone}>{t('vocab.backToWords')}</Button>
         </div>
       </Card>
     )
@@ -137,11 +136,9 @@ function Flashcards({ words, onDone }: { words: VocabWord[]; onDone: () => void 
   return (
     <div className="mx-auto max-w-xl space-y-4">
       <div className="flex items-center justify-between text-sm text-fg-faint">
-        <span>
-          Card {index + 1} of {words.length}
-        </span>
+        <span>{t('vocab.cardOf', { index: index + 1, total: words.length })}</span>
         <button type="button" onClick={onDone} className="transition hover:text-fg">
-          Stop review
+          {t('vocab.stopReview')}
         </button>
       </div>
       <div className="h-1 overflow-hidden rounded-full bg-white/10">
@@ -160,7 +157,7 @@ function Flashcards({ words, onDone }: { words: VocabWord[]; onDone: () => void 
           <>
             <p className="text-3xl font-bold text-fg">{card.word}</p>
             {card.phonetic && <p className="font-mono text-sm text-fg-faint">{card.phonetic}</p>}
-            <p className="mt-4 text-sm text-fg-faint">Tap to see the meaning</p>
+            <p className="mt-4 text-sm text-fg-faint">{t('vocab.tapToSee')}</p>
           </>
         ) : (
           <>
@@ -179,18 +176,19 @@ function Flashcards({ words, onDone }: { words: VocabWord[]; onDone: () => void 
       {flipped && (
         <div className="grid grid-cols-3 gap-2">
           <Button variant="danger" onClick={() => grade('again')}>
-            Again
+            {t('vocab.again')}
           </Button>
           <Button variant="outline" onClick={() => grade('good')}>
-            Good
+            {t('vocab.good')}
           </Button>
-          <Button onClick={() => grade('easy')}>Easy</Button>
+          <Button onClick={() => grade('easy')}>{t('vocab.easy')}</Button>
         </div>
       )}
       {flipped && (
         <p className="text-center text-xs text-fg-faint">
-          &ldquo;Again&rdquo; brings it back tomorrow. &ldquo;Easy&rdquo; pushes it{' '}
-          {describeInterval(nextBox(card.srsBox, 'easy'))}.
+          {t('vocab.gradeHint', {
+            interval: describeInterval(nextBox(card.srsBox, 'easy'), t),
+          })}
         </p>
       )}
     </div>
@@ -199,6 +197,7 @@ function Flashcards({ words, onDone }: { words: VocabWord[]; onDone: () => void 
 
 export default function Vocabulary() {
   const repo = useRepo()
+  const t = useT()
   const [tab, setTab] = useState<Tab>('all')
   const [reviewing, setReviewing] = useState(false)
 
@@ -207,7 +206,7 @@ export default function Vocabulary() {
   const due = useMemo(() => dueWords(all), [all])
   const mastered = useMemo(() => all.filter(isMastered), [all])
 
-  if (loading) return <Spinner label="Loading your words..." />
+  if (loading) return <Spinner label={t('vocab.loading')} />
 
   if (reviewing && due.length > 0) {
     return (
@@ -227,10 +226,8 @@ export default function Vocabulary() {
     <div className="space-y-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Your word notebook</h1>
-          <p className="mt-1 text-sm text-fg-muted">
-            Words you liked, reviewed at increasing intervals so they actually stay in memory.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('vocab.title')}</h1>
+          <p className="mt-1 text-sm text-fg-muted">{t('vocab.subtitle')}</p>
         </div>
         <AddWordForm onAdded={reload} />
       </header>
@@ -239,15 +236,13 @@ export default function Vocabulary() {
         <Card className="flex flex-wrap items-center justify-between gap-4 border-violet/30">
           <div>
             <p className="font-semibold text-fg">
-              {due.length} {due.length === 1 ? 'word is' : 'words are'} ready to review
+              {due.length === 1 ? t('vocab.dueOne') : t('vocab.dueMany', { count: due.length })}
             </p>
-            <p className="mt-0.5 text-sm text-fg-faint">
-              A couple of minutes now is worth an hour of re-reading later.
-            </p>
+            <p className="mt-0.5 text-sm text-fg-faint">{t('vocab.dueBlurb')}</p>
           </div>
           <Button onClick={() => setReviewing(true)}>
             <Layers className="size-4" />
-            Start review
+            {t('vocab.startReview')}
           </Button>
         </Card>
       )}
@@ -255,16 +250,16 @@ export default function Vocabulary() {
       {all.length === 0 ? (
         <EmptyState
           icon={<BookMarked className="size-6" />}
-          title="No words saved yet"
-          body="Add a word above, or save one from a practice session or a podcast note. Every word you save gets scheduled for review automatically."
+          title={t('vocab.emptyTitle')}
+          body={t('vocab.emptyBody')}
         />
       ) : (
         <section>
           <Tabs
             tabs={[
-              { id: 'all', label: 'All', count: all.length },
-              { id: 'due', label: 'Due now', count: due.length },
-              { id: 'mastered', label: 'Mastered', count: mastered.length },
+              { id: 'all', label: t('vocab.tabAll'), count: all.length },
+              { id: 'due', label: t('vocab.tabDue'), count: due.length },
+              { id: 'mastered', label: t('vocab.tabMastered'), count: mastered.length },
             ]}
             active={tab}
             onChange={setTab}
@@ -282,7 +277,7 @@ export default function Vocabulary() {
                   </div>
                   <button
                     type="button"
-                    aria-label={`Delete ${word.word}`}
+                    aria-label={t('vocab.deleteWord', { word: word.word })}
                     onClick={async () => {
                       await repo.deleteWord(word.id)
                       reload()
@@ -304,12 +299,14 @@ export default function Vocabulary() {
                   {isMastered(word) ? (
                     <Badge tone="good">
                       <Check className="size-3" />
-                      Mastered
+                      {t('vocab.mastered')}
                     </Badge>
                   ) : (
-                    <Badge tone="violet">Box {word.srsBox} of 5</Badge>
+                    <Badge tone="violet">{t('vocab.box', { box: word.srsBox })}</Badge>
                   )}
-                  {word.source !== 'manual' && <Badge>from {word.source}</Badge>}
+                  {word.source !== 'manual' && (
+                    <Badge>{t('vocab.from', { source: word.source })}</Badge>
+                  )}
                 </div>
               </Card>
             ))}
@@ -317,9 +314,7 @@ export default function Vocabulary() {
 
           {visible.length === 0 && (
             <p className="mt-6 text-center text-sm text-fg-faint">
-              {tab === 'due'
-                ? 'Nothing due right now. Come back tomorrow.'
-                : 'Nothing here yet.'}
+              {tab === 'due' ? t('vocab.nothingDue') : t('vocab.nothingHere')}
             </p>
           )}
         </section>
