@@ -167,6 +167,9 @@ const en = {
   'session.tapHighlight': 'Tap any highlighted part to see why.',
   'session.tabYours': 'What you wrote',
   'session.tabCorrected': 'Corrected',
+  'session.tabImproved': 'Best version',
+  'session.improvedBlurb':
+    'Your ideas, in your order, nothing added - written the way a strong writer at your level would write them. The difference is the structure, not the vocabulary.',
   'session.everyCorrection': 'Every correction',
   'session.wentWell': 'What went well',
   'session.workNext': 'Work on this next',
@@ -606,6 +609,9 @@ const fr: Record<StringKey, string> = {
   'session.tapHighlight': 'Touchez une partie surlignée pour voir pourquoi.',
   'session.tabYours': 'Ce que vous avez écrit',
   'session.tabCorrected': 'Corrigé',
+  'session.tabImproved': 'La meilleure version',
+  'session.improvedBlurb':
+    'Vos idées, dans votre ordre, sans rien ajouter - écrites comme les écrirait quelqu’un de solide à votre niveau. Ce qui change, c’est la structure, pas le vocabulaire.',
   'session.everyCorrection': 'Toutes les corrections',
   'session.wentWell': 'Ce qui a bien marché',
   'session.workNext': 'À travailler ensuite',

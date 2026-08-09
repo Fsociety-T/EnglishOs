@@ -24,6 +24,19 @@ export type LessonDraft = Omit<
 export interface Review {
   /** The learner's text with every correction applied. */
   correctedText: string
+  /**
+   * The same piece of writing at its best: same ideas, same order, roughly the
+   * same length, but structured the way a strong writer at that level would
+   * structure it.
+   *
+   * Deliberately not the same thing as `correctedText`. Correcting answers
+   * "what was wrong"; this answers "what good looks like for me", which is the
+   * question a learner who makes no outright mistakes still needs answered.
+   * Empty when no model wrote one - the offline engine cannot rewrite prose,
+   * and inventing a "better version" that is merely the corrected text again
+   * would be a lie the screen tells every time.
+   */
+  improvedText: string
   corrections: CorrectionDraft[]
   scores: Scores
   /** One or two encouraging, specific sentences. */

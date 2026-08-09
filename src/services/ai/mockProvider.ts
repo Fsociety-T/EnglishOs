@@ -296,6 +296,11 @@ function review(
 
   return {
     correctedText: applyCorrections(text, corrections),
+    // Rewriting prose for structure is not something pattern rules can do, and
+    // handing back the corrected text relabelled as "the best version" would
+    // teach a learner that good writing is writing with the commas fixed. The
+    // screen hides the tab instead.
+    improvedText: '',
     corrections,
     scores,
     summary: buildSummary(corrections, wordCount, kind, language),

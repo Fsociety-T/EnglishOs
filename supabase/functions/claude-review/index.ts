@@ -109,7 +109,8 @@ function reviewPrompt(kind: 'writing' | 'speaking', input: Record<string, unknow
   const learnerText = text(kind === 'writing' ? input.text : input.transcript, 12_000)
   const metrics = kind === 'speaking' ? input.metrics : undefined
   const profile = LANGUAGE_PROFILE[language(input)]
-  return `You are an expert, encouraging ${profile.name} teacher. Review the learner's ${kind} at CEFR ${text(input.level, 8)}. The learner is writing in ${profile.name}; judge it by ${profile.name} rules only. Correct only genuine issues; do not rewrite for style alone.\n\n${profile.feedbackLanguage}\n\nReturn a JSON object with exactly this shape:\n{"correctedText":"the learner's full text with every correction applied","corrections":[{"original":"string","corrected":"string","explanation":"plain language","errorType":"${profile.errorTypes}","severity":"minor|moderate|major","charStart":0,"charEnd":0}],"scores":{"overall":0,"grammar":0,"vocabulary":0,"fluency":0},"summary":"1-2 specific encouraging sentences","strengths":["string"],"nextFocus":["string"]}\n\nEvery one of correctedText, corrections, scores, summary, strengths and nextFocus is REQUIRED. Include all six even when the text is very short or already correct — use an empty array for corrections, strengths or nextFocus when you have nothing to add, and still give scores and a summary. Scores are integers from 0 to 100. Give at most three strengths and three nextFocus items.\n\nCritical rule for offsets: charStart and charEnd are JavaScript string offsets into the exact learner text below, and original MUST equal learnerText.slice(charStart, charEnd) character for character. Count the offsets carefully — a correction whose offsets do not match its original text is discarded.\n\nTopic: ${text(input.topic, 300)}\n${metrics ? `Local speaking metrics (do not invent audio facts): ${JSON.stringify(metrics)}\n` : ''}Learner text:\n${learnerText}`
+  const level = text(input.level, 8)
+  return `You are an expert, encouraging ${profile.name} teacher. Review the learner's ${kind} at CEFR ${level}. The learner is writing in ${profile.name}; judge it by ${profile.name} rules only. Correct only genuine issues; do not rewrite for style alone.\n\n${profile.feedbackLanguage}\n\nReturn a JSON object with exactly this shape:\n{"correctedText":"the learner's full text with every correction applied","improvedText":"the same text rewritten at its best","corrections":[{"original":"string","corrected":"string","explanation":"plain language","errorType":"${profile.errorTypes}","severity":"minor|moderate|major","charStart":0,"charEnd":0}],"scores":{"overall":0,"grammar":0,"vocabulary":0,"fluency":0},"summary":"1-2 specific encouraging sentences","strengths":["string"],"nextFocus":["string"]}\n\ncorrectedText and improvedText are two different things and must not be the same string. correctedText fixes what is wrong and changes nothing else. improvedText shows what good looks like:\n- Keep every idea the learner had, in the same order. Add no new facts, opinions or examples.\n- Stay within about 10 percent of the original length. This is a model of how they could have written it, not a longer essay.\n- Improve the STRUCTURE: join choppy sentences, vary sentence length, tighten word order, and make each sentence lead into the next.\n- Write it as a strong CEFR ${level} writer would - one realistic step above this learner, using structures they could reach for next time. Do not show off vocabulary far above ${level}; an unreachable model teaches nothing.\n\nEvery one of correctedText, improvedText, corrections, scores, summary, strengths and nextFocus is REQUIRED. Include all six even when the text is very short or already correct — use an empty array for corrections, strengths or nextFocus when you have nothing to add, and still give scores and a summary. Scores are integers from 0 to 100. Give at most three strengths and three nextFocus items.\n\nCritical rule for offsets: charStart and charEnd are JavaScript string offsets into the exact learner text below, and original MUST equal learnerText.slice(charStart, charEnd) character for character. Count the offsets carefully — a correction whose offsets do not match its original text is discarded.\n\nTopic: ${text(input.topic, 300)}\n${metrics ? `Local speaking metrics (do not invent audio facts): ${JSON.stringify(metrics)}\n` : ''}Learner text:\n${learnerText}`
 }
 
 /**
@@ -164,6 +165,7 @@ function object(properties: Record<string, unknown>) {
 
 const REVIEW_SCHEMA = object({
   correctedText: str,
+  improvedText: str,
   corrections: {
     type: 'array',
     items: object({
@@ -280,8 +282,17 @@ function promptFor(action: Action, input: Record<string, unknown>): string {
 function validateReview(value: unknown, source: string) {
   const review = value as Record<string, unknown>
   const corrections = Array.isArray(review.corrections) ? review.corrections : []
+  // A model that ignores the instruction and returns the learner's own text
+  // back, or the corrected text again, has produced nothing worth a tab. Drop
+  // it here rather than letting the screen present it as an improvement.
+  const improved = text(review.improvedText, 16_000)
+  const corrected = text(review.correctedText, 16_000) || source
   return {
-    correctedText: text(review.correctedText, 16_000) || source,
+    correctedText: corrected,
+    improvedText:
+      improved && improved.trim() !== source.trim() && improved.trim() !== corrected.trim()
+        ? improved
+        : '',
     corrections: corrections.slice(0, 30).flatMap((item) => {
       const correction = item as Record<string, unknown>
       const charStart = Number(correction.charStart)

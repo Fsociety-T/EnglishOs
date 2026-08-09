@@ -77,7 +77,7 @@ export default function SessionView() {
   const { language } = useLanguage()
   const t = useT()
 
-  const [view, setView] = useState<'yours' | 'corrected'>('yours')
+  const [view, setView] = useState<'yours' | 'corrected' | 'improved'>('yours')
   const [selected, setSelected] = useState<Correction | null>(null)
   const [savedWords, setSavedWords] = useState<Set<string>>(new Set())
 
@@ -242,11 +242,16 @@ export default function SessionView() {
           }
           subtitle={errorCount === 0 ? undefined : t('session.tapHighlight')}
         />
-        <div className="mb-3 max-w-xs">
+        <div className="mb-3 max-w-md">
           <Tabs
             tabs={[
               { id: 'yours', label: t('session.tabYours') },
               { id: 'corrected', label: t('session.tabCorrected') },
+              // Only offered when a model actually wrote one. The offline
+              // engine does not, and an empty third tab would read as a bug.
+              ...(session.improvedText
+                ? [{ id: 'improved' as const, label: t('session.tabImproved') }]
+                : []),
             ]}
             active={view}
             onChange={setView}
@@ -281,8 +286,17 @@ export default function SessionView() {
                 ),
               )}
             </p>
-          ) : (
+          ) : view === 'corrected' ? (
             <p className="text-base leading-loose whitespace-pre-wrap text-fg">{correctedText}</p>
+          ) : (
+            <>
+              <p className="mb-3 rounded-xl bg-white/5 px-4 py-3 text-sm leading-relaxed text-fg-muted">
+                {t('session.improvedBlurb')}
+              </p>
+              <p className="text-base leading-loose whitespace-pre-wrap text-fg">
+                {session.improvedText}
+              </p>
+            </>
           )}
         </Card>
 

@@ -35,6 +35,8 @@ create table if not exists public.sessions (
   topic_title       text        not null,
   prompt            text        not null default '',
   content           text        not null,
+  -- The reviewer's model rewrite of `content`. Null when no model produced one.
+  improved_text     text,
   audio_path        text,
   duration_seconds  integer     not null default 0,
   word_count        integer     not null default 0,
@@ -228,6 +230,15 @@ end $$;
 -- open the app, which is the fastest way to make someone ignore a review
 -- queue forever. Existing mastered lessons simply schedule themselves the next
 -- time they are taken.
+-- ------------------------------------------------ better-version backfill (v5) --
+-- The reviewer now returns a model rewrite alongside the corrections. Null
+-- everywhere it was never produced: on old sessions, and on any session the
+-- offline engine reviewed, which cannot rewrite prose.
+do $$
+begin
+  alter table public.sessions add column if not exists improved_text text;
+end $$;
+
 do $$
 begin
   alter table public.lessons add column if not exists memory_hook text;
