@@ -87,11 +87,14 @@ interface LessonRow {
   error_type: Lesson['errorType']
   title: string
   body: string
+  memory_hook: string | null
   examples: Lesson['examples']
   exercises: Lesson['exercises']
   source_session_id: string | null
   source_sentence: string | null
   status: LessonStatus
+  review_box: SrsBox | null
+  next_review_at: string | null
   created_at: string
 }
 
@@ -102,11 +105,16 @@ function toLesson(row: LessonRow): Lesson {
     errorType: row.error_type,
     title: row.title,
     body: row.body,
+    memoryHook: row.memory_hook,
     examples: row.examples ?? [],
     exercises: row.exercises ?? [],
     sourceSessionId: row.source_session_id,
     sourceSentence: row.source_sentence,
     status: row.status,
+    // Rows written before review scheduling existed have no box. Box 1 is the
+    // honest starting point, and a null date simply means "not waiting".
+    reviewBox: row.review_box ?? 1,
+    nextReviewAt: row.next_review_at,
     createdAt: row.created_at,
   }
 }
@@ -294,9 +302,17 @@ export const supabaseRepo: Repository = {
     for (const lesson of lessons) {
       const match = existing.find((row) => row.error_type === lesson.errorType)
       if (match) {
+        // Replace the teaching too, not just the quote: the newer lesson was
+        // written against a fresher mistake and brings new exercises. Status
+        // and review schedule are deliberately left alone.
         await sb
           .from('lessons')
           .update({
+            title: lesson.title,
+            body: lesson.body,
+            memory_hook: lesson.memoryHook ?? null,
+            examples: lesson.examples,
+            exercises: lesson.exercises,
             source_sentence: lesson.sourceSentence,
             source_session_id: lesson.sourceSessionId,
             created_at: lesson.createdAt,
@@ -310,11 +326,14 @@ export const supabaseRepo: Repository = {
           error_type: lesson.errorType,
           title: lesson.title,
           body: lesson.body,
+          memory_hook: lesson.memoryHook ?? null,
           examples: lesson.examples,
           exercises: lesson.exercises,
           source_session_id: lesson.sourceSessionId,
           source_sentence: lesson.sourceSentence,
           status: lesson.status,
+          review_box: lesson.reviewBox,
+          next_review_at: lesson.nextReviewAt ?? null,
           created_at: lesson.createdAt,
         })
       }
@@ -326,9 +345,16 @@ export const supabaseRepo: Repository = {
     return lessons
   },
 
-  async setLessonStatus(id, status) {
+  async saveLessonProgress(id, progress) {
     const sb = requireSupabase()
-    const { error } = await sb.from('lessons').update({ status }).eq('id', id)
+    const { error } = await sb
+      .from('lessons')
+      .update({
+        status: progress.status,
+        review_box: progress.reviewBox,
+        next_review_at: progress.nextReviewAt,
+      })
+      .eq('id', id)
     if (error) throw new Error(error.message)
   },
 

@@ -63,15 +63,28 @@ create table if not exists public.lessons (
   error_type         text        not null,
   title              text        not null,
   body               text        not null default '',
+  -- One sentence to remember the rule by. Nullable: a lesson written before
+  -- hooks existed, or one the model declined to give a hook for, is still a
+  -- perfectly good lesson.
+  memory_hook        text,
   examples           jsonb       not null default '[]'::jsonb,
   exercises          jsonb       not null default '[]'::jsonb,
   source_session_id  uuid        references public.sessions on delete set null,
   source_sentence    text,
   status             text        not null default 'new'
                        check (status in ('new','learning','mastered')),
+  -- Leitner review, same boxes as the vocabulary notebook. next_review_at is
+  -- null until the lesson has been mastered once: an unlearned lesson is not
+  -- waiting for a review, it is simply unread.
+  review_box         smallint    not null default 1 check (review_box between 1 and 5),
+  next_review_at     timestamptz,
   created_at         timestamptz not null default now()
 );
 create index if not exists lessons_user_idx on public.lessons (user_id, created_at desc);
+-- lessons_due_idx is created in the v4 block below, not here. On a database
+-- that already has a lessons table, `create table if not exists` does nothing,
+-- so next_review_at does not exist yet at this point and indexing it would
+-- abort the whole script before the backfill ever ran.
 
 -- -------------------------------------------------------------- vocabulary --
 create table if not exists public.vocabulary (
@@ -206,6 +219,31 @@ begin
     end;
   end loop;
 end $$;
+
+-- ---------------------------------------------- lesson review backfill (v4) --
+-- Lessons became things you come back to, rather than things you passed once.
+--
+-- next_review_at stays null for every existing lesson on purpose. Back-dating
+-- it would drop the learner's whole history into "due today" the moment they
+-- open the app, which is the fastest way to make someone ignore a review
+-- queue forever. Existing mastered lessons simply schedule themselves the next
+-- time they are taken.
+do $$
+begin
+  alter table public.lessons add column if not exists memory_hook text;
+  alter table public.lessons add column if not exists review_box smallint not null default 1;
+  alter table public.lessons add column if not exists next_review_at timestamptz;
+end $$;
+
+do $$
+begin
+  alter table public.lessons
+    add constraint lessons_review_box_check check (review_box between 1 and 5);
+exception
+  when duplicate_object then null;
+end $$;
+
+create index if not exists lessons_due_idx on public.lessons (user_id, next_review_at);
 
 -- Check constraints are added separately: each is skipped if already present.
 do $$

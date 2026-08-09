@@ -241,13 +241,38 @@ export interface Lesson {
   title: string
   /** Short explanation, light markdown (paragraphs and **bold**). */
   body: string
+  /**
+   * One sentence to remember the rule by: a trick, an image, a test you can
+   * run in your head. Kept out of `body` so the screen can put it somewhere
+   * you cannot miss - it is the part people actually recall a week later,
+   * which is exactly the part a wall of explanation buries.
+   */
+  memoryHook?: string | null
   examples: { wrong: string; right: string; note?: string }[]
   exercises: Exercise[]
   sourceSessionId?: string | null
   /** The learner's own sentence that triggered this lesson. */
   sourceSentence?: string | null
   status: LessonStatus
+  /**
+   * Leitner box for review, shared with the vocabulary notebook. Passing the
+   * quiz moves the lesson up a box and pushes the next review further out;
+   * failing sends it back to box 1.
+   */
+  reviewBox: SrsBox
+  /**
+   * When this lesson comes back to be re-tested. Null until it has been
+   * mastered once - an unlearned lesson is not waiting, it is simply unread.
+   */
+  nextReviewAt?: string | null
   createdAt: string
+}
+
+/** What one quiz attempt changes about a lesson. */
+export interface LessonProgress {
+  status: LessonStatus
+  reviewBox: SrsBox
+  nextReviewAt: string | null
 }
 
 export type VocabSource = 'writing' | 'speaking' | 'podcast' | 'manual'

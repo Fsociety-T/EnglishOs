@@ -112,10 +112,24 @@ function reviewPrompt(kind: 'writing' | 'speaking', input: Record<string, unknow
   return `You are an expert, encouraging ${profile.name} teacher. Review the learner's ${kind} at CEFR ${text(input.level, 8)}. The learner is writing in ${profile.name}; judge it by ${profile.name} rules only. Correct only genuine issues; do not rewrite for style alone.\n\n${profile.feedbackLanguage}\n\nReturn a JSON object with exactly this shape:\n{"correctedText":"the learner's full text with every correction applied","corrections":[{"original":"string","corrected":"string","explanation":"plain language","errorType":"${profile.errorTypes}","severity":"minor|moderate|major","charStart":0,"charEnd":0}],"scores":{"overall":0,"grammar":0,"vocabulary":0,"fluency":0},"summary":"1-2 specific encouraging sentences","strengths":["string"],"nextFocus":["string"]}\n\nEvery one of correctedText, corrections, scores, summary, strengths and nextFocus is REQUIRED. Include all six even when the text is very short or already correct — use an empty array for corrections, strengths or nextFocus when you have nothing to add, and still give scores and a summary. Scores are integers from 0 to 100. Give at most three strengths and three nextFocus items.\n\nCritical rule for offsets: charStart and charEnd are JavaScript string offsets into the exact learner text below, and original MUST equal learnerText.slice(charStart, charEnd) character for character. Count the offsets carefully — a correction whose offsets do not match its original text is discarded.\n\nTopic: ${text(input.topic, 300)}\n${metrics ? `Local speaking metrics (do not invent audio facts): ${JSON.stringify(metrics)}\n` : ''}Learner text:\n${learnerText}`
 }
 
+/**
+ * Build the mini-lessons.
+ *
+ * The old version of this prompt asked for a "concise personalised mini-lesson"
+ * and got exactly that: correct, forgettable grammar notes that read like a
+ * reference book. Nobody remembers a reference book.
+ *
+ * So the instructions below are about *teaching*, not about being right. A
+ * one-line hook you can hear in your head while writing beats a paragraph you
+ * skim once. A rule stated with the learner's own broken sentence beside it
+ * lands harder than the same rule stated abstractly. And exercises have to
+ * test the rule in new sentences, because a quiz that quotes the lesson back
+ * measures short-term memory rather than understanding.
+ */
 function lessonsPrompt(input: Record<string, unknown>): string {
   const corrections = Array.isArray(input.corrections) ? input.corrections.slice(0, 20) : []
   const profile = LANGUAGE_PROFILE[language(input)]
-  return `You are a ${profile.name} teacher creating concise personalised mini-lessons for CEFR ${text(input.level, 8)}. Use the learner's actual mistakes. Return one to three lessons, grouped by the most important error types.\n\n${profile.feedbackLanguage} Every example and exercise must be in ${profile.name}.\n\nReturn a JSON object with exactly this shape:\n{"lessons":[{"errorType":"${profile.errorTypes}","title":"string","body":"short markdown explanation","examples":[{"wrong":"string","right":"string","note":"string"}],"exercises":[{"question":"string","choices":["string","string","string","string"],"answerIndex":0,"explanation":"string"}],"sourceSessionId":null,"sourceSentence":null}]}\n\nEvery field shown is REQUIRED on every lesson. Use an empty string for "note" when there is nothing to add, and null for a source field you cannot determine. answerIndex is the 0-based position of the correct choice.\n\nCorrections: ${JSON.stringify(corrections)}\nSource text: ${text(input.sourceText, 12_000)}`
+  return `You are a ${profile.name} teacher writing mini-lessons for one learner at CEFR ${text(input.level, 8)}, built from the mistakes they just made. Return one to three lessons, grouped by the most important error types.\n\n${profile.feedbackLanguage} Every example and exercise must be in ${profile.name}.\n\nHow to teach, in order of importance:\n\n1. "memoryHook" is the most important field. One short sentence that makes the rule stick: a trick, a vivid image, a question they can ask themselves mid-sentence, a two-word test. It must be memorable enough to recall a week later without re-reading the lesson. Warm and a bit playful is good; a restatement of the rule is not a hook.\n2. "body" is two or three SHORT paragraphs of plain language. Speak to the learner as "you". Explain WHY the correct form is correct, not just what it is. No grammar jargon unless you immediately explain it in ordinary words. At A1 and A2, keep sentences very simple.\n3. "examples" must start from what the learner actually wrote. Put their real mistake first, fixed, then one or two other cases that show the same rule somewhere new.\n4. "exercises" are three or four questions testing the SAME rule in sentences the learner has not seen. Never quote the lesson body back at them. Wrong choices should be mistakes a real learner would make, not obvious nonsense. Every explanation says why the right answer is right AND why the tempting wrong one is wrong.\n5. Be encouraging without being empty. Never say the mistake is bad, common, or careless.\n\nReturn a JSON object with exactly this shape:\n{"lessons":[{"errorType":"${profile.errorTypes}","title":"string","body":"short markdown explanation","memoryHook":"one memorable sentence","examples":[{"wrong":"string","right":"string","note":"string"}],"exercises":[{"question":"string","choices":["string","string","string","string"],"answerIndex":0,"explanation":"string"}],"sourceSessionId":null,"sourceSentence":null}]}\n\nEvery field shown is REQUIRED on every lesson. Use an empty string for "note" when there is nothing to add, and null for a source field you cannot determine. answerIndex is the 0-based position of the correct choice.\n\nCorrections: ${JSON.stringify(corrections)}\nSource text: ${text(input.sourceText, 12_000)}`
 }
 
 function vocabularyPrompt(input: Record<string, unknown>): string {
@@ -180,6 +194,7 @@ const LESSONS_SCHEMA = object({
       errorType: { type: 'string', enum: [...ERROR_TYPES] },
       title: str,
       body: str,
+      memoryHook: str,
       examples: {
         type: 'array',
         items: object({ wrong: str, right: str, note: str }),
@@ -325,6 +340,9 @@ function validateLessons(value: unknown) {
       errorType,
       title: text(lesson.title, 200),
       body: text(lesson.body, 4_000),
+      // Capped hard: a hook is one sentence by definition, and a paragraph
+      // dressed as a hook would just be the body printed twice.
+      memoryHook: text(lesson.memoryHook, 240) || null,
       examples,
       exercises,
       sourceSessionId: typeof lesson.sourceSessionId === 'string' ? lesson.sourceSessionId : null,

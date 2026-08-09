@@ -123,6 +123,15 @@ export const demoRepo: Repository = {
           (l) => l.errorType === lesson.errorType && l.status !== 'mastered',
         )
         if (existing) {
+          // Replace the teaching too, not just the quote. The newer lesson was
+          // written against a fresher mistake and brings new exercises, so
+          // refreshing content is what stops the same four questions coming
+          // round forever. Status and schedule are deliberately untouched.
+          existing.title = lesson.title
+          existing.body = lesson.body
+          existing.memoryHook = lesson.memoryHook
+          existing.examples = lesson.examples
+          existing.exercises = lesson.exercises
           existing.sourceSentence = lesson.sourceSentence
           existing.sourceSessionId = lesson.sourceSessionId
           existing.createdAt = lesson.createdAt
@@ -133,10 +142,13 @@ export const demoRepo: Repository = {
     })
     return lessons
   },
-  async setLessonStatus(id, status: LessonStatus) {
+  async saveLessonProgress(id, progress) {
     mutate((s) => {
       const lesson = s.lessons.find((l) => l.id === id)
-      if (lesson) lesson.status = status
+      if (!lesson) return
+      lesson.status = progress.status
+      lesson.reviewBox = progress.reviewBox
+      lesson.nextReviewAt = progress.nextReviewAt
     })
   },
 
