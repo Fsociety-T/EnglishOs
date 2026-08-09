@@ -4,6 +4,7 @@ import { Spinner } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import Auth from '@/pages/Auth'
 import Dashboard from '@/pages/Dashboard'
+import History from '@/pages/History'
 import LessonDetail from '@/pages/LessonDetail'
 import Lessons from '@/pages/Lessons'
 import LevelTest from '@/pages/LevelTest'
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/write" element={<Write />} />
         <Route path="/speak" element={<Speak />} />
         <Route path="/level" element={<LevelTest />} />
+        <Route path="/history" element={<History />} />
         <Route path="/session/:id" element={<SessionView />} />
         <Route path="/lessons" element={<Lessons />} />
         <Route path="/lessons/:id" element={<LessonDetail />} />

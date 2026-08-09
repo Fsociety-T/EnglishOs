@@ -25,6 +25,7 @@ const en = {
   'nav.speak': 'Speak',
   'nav.lessons': 'Lessons',
   'nav.vocabulary': 'Words',
+  'nav.history': 'History',
   'nav.podcasts': 'Podcasts',
   'nav.progress': 'Progress',
   'nav.settings': 'Settings',
@@ -143,6 +144,20 @@ const en = {
   'prog.levelNone':
     'You have not taken the writing test yet, so your level is a setting rather than a measurement.',
   'prog.takeTest': 'Find my level',
+
+  /* ------------------------------------------------------------- history -- */
+  'history.loading': 'Loading your history...',
+  'history.title': 'Everything you have done',
+  'history.subtitle':
+    'Every piece you have written and every recording, oldest still here. Reading something from a month ago and wincing is the clearest sign of progress there is.',
+  'history.all': 'All',
+  'history.placement': 'Level test',
+  'history.mistakeRate': '{rate} mistakes per 100 words',
+  'history.emptyTitle': 'Nothing here yet',
+  'history.emptyBody':
+    'Once you have written or recorded something, it stays here for good - so you can come back and see how differently you would write it now.',
+  'history.emptyGroup': 'Nothing of that kind yet.',
+  'history.seeAll': 'See everything',
 
   /* -------------------------------------------------------- session view -- */
   'session.loading': 'Loading session...',
@@ -363,14 +378,11 @@ const en = {
   'dash.morning': 'Good morning',
   'dash.afternoon': 'Good afternoon',
   'dash.evening': 'Good evening',
-  'dash.notYet': 'You have not practised yet today. Ten minutes is enough to keep the streak alive.',
-  'dash.already': 'You have already practised today. Anything more is a bonus.',
   'dash.ofGoal': 'of {goal} min',
   'dash.noStreak': 'No streak yet',
   'dash.streak': '{count}-day streak',
   'dash.goalDone': 'Daily goal complete. Well done.',
   'dash.goalLeft': '{count} more minutes to hit today’s goal.',
-  'dash.bestStreak': ' Your best streak is {count} days.',
   'dash.startWriting': 'Start writing',
   'dash.startSpeaking': 'Start speaking',
   'dash.wordsWritten': 'Words written',
@@ -381,19 +393,11 @@ const en = {
   'dash.writing': 'Writing',
   'dash.speakingKind': 'Speaking',
   'dash.words': 'words',
-  'dash.whatNext': 'What do you want to do?',
   'dash.actionWrite': 'Write about a topic',
-  'dash.actionWriteBody': 'Pick a prompt and get every mistake explained.',
   'dash.actionSpeak': 'Speak for two minutes',
-  'dash.actionSpeakBody': 'Record yourself and get a fluency score.',
   'dash.actionWords': 'Review your words',
-  'dash.actionWordsBody': 'Flashcards for the words that are due today.',
   'dash.actionLessons': 'Study a weak area',
-  'dash.actionLessonsBody': 'Lessons built from the mistakes you actually make.',
-  'dash.lessonsDue': '{count} to review',
   'dash.placementTitle': 'You have not been placed yet',
-  'dash.placementBody':
-    'Write once about a topic we pick, and the app will tell you your level instead of assuming one.',
   'dash.placementAction': 'Find my level',
 
   /* ----------------------------------------------------------- placement -- */
@@ -479,6 +483,7 @@ const fr: Record<StringKey, string> = {
   'nav.speak': 'Parler',
   'nav.lessons': 'Leçons',
   'nav.vocabulary': 'Mots',
+  'nav.history': 'Historique',
   'nav.podcasts': 'Podcasts',
   'nav.progress': 'Progrès',
   'nav.settings': 'Paramètres',
@@ -603,6 +608,20 @@ const fr: Record<StringKey, string> = {
   'prog.levelNone':
     'Vous n’avez pas encore passé le test d’écriture : votre niveau est un réglage, pas une mesure.',
   'prog.takeTest': 'Évaluer mon niveau',
+
+  /* ------------------------------------------------------------- history -- */
+  'history.loading': 'Chargement de votre historique...',
+  'history.title': 'Tout ce que vous avez fait',
+  'history.subtitle':
+    'Chaque texte écrit et chaque enregistrement, les plus anciens compris. Relire un texte d’il y a un mois et grimacer est le signe de progrès le plus clair qui soit.',
+  'history.all': 'Tout',
+  'history.placement': 'Test de niveau',
+  'history.mistakeRate': '{rate} erreurs pour 100 mots',
+  'history.emptyTitle': 'Rien pour l’instant',
+  'history.emptyBody':
+    'Dès que vous aurez écrit ou enregistré quelque chose, cela restera ici pour de bon - pour revenir voir à quel point vous l’écririez différemment aujourd’hui.',
+  'history.emptyGroup': 'Rien de ce type pour l’instant.',
+  'history.seeAll': 'Voir tout',
 
   /* -------------------------------------------------------- session view -- */
   'session.loading': 'Chargement de la session...',
@@ -829,15 +848,11 @@ const fr: Record<StringKey, string> = {
   'dash.morning': 'Bonjour',
   'dash.afternoon': 'Bon après-midi',
   'dash.evening': 'Bonsoir',
-  'dash.notYet':
-    'Vous n’avez pas encore pratiqué aujourd’hui. Dix minutes suffisent pour garder la série.',
-  'dash.already': 'Vous avez déjà pratiqué aujourd’hui. Tout le reste est en bonus.',
   'dash.ofGoal': 'sur {goal} min',
   'dash.noStreak': 'Pas encore de série',
   'dash.streak': 'Série de {count} jours',
   'dash.goalDone': 'Objectif du jour atteint. Bravo.',
   'dash.goalLeft': 'Encore {count} minutes pour atteindre l’objectif du jour.',
-  'dash.bestStreak': ' Votre meilleure série est de {count} jours.',
   'dash.startWriting': 'Commencer à écrire',
   'dash.startSpeaking': 'Commencer à parler',
   'dash.wordsWritten': 'Mots écrits',
@@ -848,19 +863,11 @@ const fr: Record<StringKey, string> = {
   'dash.writing': 'Écrit',
   'dash.speakingKind': 'Oral',
   'dash.words': 'mots',
-  'dash.whatNext': 'Que voulez-vous faire ?',
   'dash.actionWrite': 'Écrire sur un sujet',
-  'dash.actionWriteBody': 'Choisissez un sujet et faites expliquer chaque erreur.',
   'dash.actionSpeak': 'Parler deux minutes',
-  'dash.actionSpeakBody': 'Enregistrez-vous et obtenez une note de fluidité.',
   'dash.actionWords': 'Réviser vos mots',
-  'dash.actionWordsBody': 'Des cartes pour les mots à réviser aujourd’hui.',
   'dash.actionLessons': 'Travailler un point faible',
-  'dash.actionLessonsBody': 'Des leçons bâties sur les erreurs que vous faites vraiment.',
-  'dash.lessonsDue': '{count} à réviser',
   'dash.placementTitle': 'Votre niveau n’a pas encore été évalué',
-  'dash.placementBody':
-    'Écrivez une fois sur un sujet que nous choisissons, et l’application vous dira votre niveau au lieu de le supposer.',
   'dash.placementAction': 'Évaluer mon niveau',
 
   /* ----------------------------------------------------------- placement -- */
