@@ -165,7 +165,6 @@ interface PodcastRow {
   status: Podcast['status']
   progress_seconds: number
   rating: number | null
-  transcript: Podcast['transcript']
   created_at: string
 }
 
@@ -180,7 +179,6 @@ function toPodcast(row: PodcastRow): Podcast {
     status: row.status,
     progressSeconds: row.progress_seconds,
     rating: row.rating,
-    transcript: row.transcript ?? [],
     createdAt: row.created_at,
   }
 }
@@ -458,7 +456,6 @@ export const supabaseRepo: Repository = {
       status: podcast.status,
       progress_seconds: podcast.progressSeconds,
       rating: podcast.rating ?? null,
-      transcript: podcast.transcript ?? [],
       created_at: podcast.createdAt,
     })
     if (error) throw new Error(error.message)
@@ -472,8 +469,6 @@ export const supabaseRepo: Repository = {
     if (patch.status !== undefined) row.status = patch.status
     if (patch.progressSeconds !== undefined) row.progress_seconds = patch.progressSeconds
     if (patch.rating !== undefined) row.rating = patch.rating
-    // Sent whole: a paste replaces the transcript, it never edits one line.
-    if (patch.transcript !== undefined) row.transcript = patch.transcript
     if (Object.keys(row).length === 0) return
     const { error } = await sb.from('podcasts').update(row).eq('id', id)
     if (error) throw new Error(error.message)
