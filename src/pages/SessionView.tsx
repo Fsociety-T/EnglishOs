@@ -111,7 +111,7 @@ export default function SessionView() {
   }) {
     if (savedWords.has(word.word)) return
     await repo.addWord({
-      id: newId('voc'),
+      id: newId(),
       word: word.word,
       phonetic: word.phonetic,
       partOfSpeech: word.partOfSpeech,

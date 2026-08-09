@@ -22,7 +22,7 @@ function AddWordForm({ onAdded }: { onAdded: () => void }) {
     if (!word.trim() || !definition.trim() || saving) return
     setSaving(true)
     await repo.addWord({
-      id: newId('voc'),
+      id: newId(),
       word: word.trim(),
       definition: definition.trim(),
       example: example.trim(),

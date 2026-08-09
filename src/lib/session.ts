@@ -21,7 +21,7 @@ export interface SubmitInput {
  */
 export async function submitPractice(input: SubmitInput): Promise<PracticeSession> {
   const profile = await repo.getProfile()
-  const sessionId = newId('ses')
+  const sessionId = newId()
 
   const review =
     input.kind === 'speaking' && input.metrics
@@ -39,7 +39,7 @@ export async function submitPractice(input: SubmitInput): Promise<PracticeSessio
 
   const corrections: Correction[] = review.corrections.map((draft) => ({
     ...draft,
-    id: newId('cor'),
+    id: newId(),
     sessionId,
   }))
 
@@ -74,7 +74,11 @@ export async function submitPractice(input: SubmitInput): Promise<PracticeSessio
       })
       const lessons: Lesson[] = drafts.map((draft) => ({
         ...draft,
-        id: newId('les'),
+        id: newId(),
+        // source_session_id is a uuid foreign key. The draft's value comes from
+        // the model, which can only echo or invent one; we already know which
+        // session these lessons came from, so never let the model decide it.
+        sourceSessionId: sessionId,
         status: 'new',
         createdAt: new Date().toISOString(),
       }))
