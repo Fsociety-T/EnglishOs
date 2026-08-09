@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { BookMarked, Flame, GraduationCap, Mic, PenLine, Timer, Type } from 'lucide-react'
+import { BookMarked, Flame, Gauge, GraduationCap, Mic, PenLine, Timer, Type } from 'lucide-react'
 import { Button, Card, ProgressRing, SectionHeading, StatTile } from '@/components/ui'
 import { useSessions, useVocabulary } from '@/hooks/useContent'
 import { useAsync } from '@/hooks/useAsync'
@@ -103,6 +103,30 @@ export default function Dashboard() {
           </div>
         </div>
       </Card>
+
+      {/* Placement. Shown until the writing test has been taken once: until
+          then every prompt, lesson and review is pitched at a level nobody
+          measured. It disappears on its own rather than needing dismissing. */}
+      {profile && profile.writingLevel === null && (
+        <Card className="border-violet/30">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-violet/10 text-violet-soft">
+                <Gauge className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="font-medium text-fg">{t('dash.placementTitle')}</p>
+                <p className="mt-1 text-sm leading-relaxed text-fg-faint">
+                  {t('dash.placementBody')}
+                </p>
+              </div>
+            </div>
+            <Link to="/level">
+              <Button>{t('dash.placementAction')}</Button>
+            </Link>
+          </div>
+        </Card>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

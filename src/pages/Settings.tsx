@@ -1,7 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
-import { AlertTriangle, Check, Cloud, Cpu, Download, HardDrive, LogOut, Upload } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import {
+  AlertTriangle,
+  Check,
+  Cloud,
+  Cpu,
+  Download,
+  Gauge,
+  HardDrive,
+  LogOut,
+  Upload,
+} from 'lucide-react'
 import { Badge, Button, Card, SectionHeading, Spinner } from '@/components/ui'
 import { useAsync } from '@/hooks/useAsync'
+import { useSessions } from '@/hooks/useContent'
 import { signOut, useAuth } from '@/hooks/useAuth'
 import { useLanguage } from '@/i18n'
 import { ai } from '@/services/ai'
@@ -15,6 +27,7 @@ export default function Settings() {
   const { email } = useAuth()
   const { language, t, setLanguage } = useLanguage()
   const { data: profile, loading, reload } = useAsync(() => repo.getProfile(), [])
+  const { data: sessions } = useSessions()
 
   const [name, setName] = useState('')
   const [level, setLevel] = useState<CefrLevel>('B1')
@@ -89,6 +102,10 @@ export default function Settings() {
   }
 
   if (loading) return <Spinner label={t('settings.loading')} />
+
+  // Sessions arrive newest first, so the first placement in the list is the
+  // most recent measurement.
+  const lastPlacement = (sessions ?? []).find((session) => session.isPlacement)
 
   const inputClass =
     'w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-fg outline-none placeholder:text-fg-faint focus:border-violet/50'
@@ -193,6 +210,36 @@ export default function Settings() {
               {t('common.saved')}
             </span>
           )}
+        </div>
+      </Card>
+
+      <Card>
+        <SectionHeading
+          title={t('settings.measuredLevel')}
+          subtitle={t('settings.measuredBlurb')}
+        />
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-violet/10 text-violet-soft">
+              <Gauge className="size-4" />
+            </span>
+            <div className="min-w-0 text-sm leading-relaxed">
+              <p className="text-fg">
+                {profile?.writingLevel
+                  ? lastPlacement
+                    ? t('settings.measuredWriting', {
+                        level: profile.writingLevel,
+                        date: new Date(lastPlacement.createdAt).toLocaleDateString(),
+                      })
+                    : t('settings.measuredWritingNoDate', { level: profile.writingLevel })
+                  : t('settings.measuredNever')}
+              </p>
+              <p className="mt-1 text-fg-faint">{t('settings.measuredSpeakingSoon')}</p>
+            </div>
+          </div>
+          <Link to="/level">
+            <Button variant="outline">{t('settings.checkLevel')}</Button>
+          </Link>
         </div>
       </Card>
 

@@ -1,6 +1,16 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BookMarked, Clock, Flame, PenLine, Table2, Target, TrendingUp } from 'lucide-react'
+import {
+  ArrowRight,
+  BookMarked,
+  Clock,
+  Flame,
+  Gauge,
+  PenLine,
+  Table2,
+  Target,
+  TrendingUp,
+} from 'lucide-react'
 import {
   ActivityHeatmap,
   ChartFrame,
@@ -8,7 +18,7 @@ import {
   Sparkline,
   TrendArea,
 } from '@/components/charts'
-import { Button, Card, EmptyState, StatTile, Spinner } from '@/components/ui'
+import { Button, Card, EmptyState, SectionHeading, StatTile, Spinner } from '@/components/ui'
 import { useLanguage, useT } from '@/i18n'
 import { useSessions, useVocabulary } from '@/hooks/useContent'
 import { useAsync } from '@/hooks/useAsync'
@@ -84,6 +94,12 @@ export default function Progress() {
       .map(([type, count]) => ({ label: ERROR_TYPE_LABEL[language][type], value: count }))
   }, [allSessions])
 
+  /** Every placement test taken, oldest first, so the line reads as a story. */
+  const placements = useMemo(
+    () => allSessions.filter((s) => s.isPlacement && s.estimatedLevel),
+    [allSessions],
+  )
+
   const heatmapDays = useMemo(
     () => new Map(allStats.map((s) => [s.day, s.minutesPracticed])),
     [allStats],
@@ -153,6 +169,39 @@ export default function Progress() {
           icon={<BookMarked className="size-4" />}
         />
       </div>
+
+      <Card>
+        <SectionHeading
+          title={t('prog.levelTitle')}
+          subtitle={placements.length > 0 ? t('prog.levelSub') : undefined}
+        />
+        {placements.length === 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="text-sm leading-relaxed text-fg-muted">{t('prog.levelNone')}</p>
+            <Link to="/level">
+              <Button variant="outline">
+                <Gauge className="size-4" />
+                {t('prog.takeTest')}
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <ol className="flex flex-wrap items-center gap-2">
+            {placements.map((session, index) => (
+              <li key={session.id} className="flex items-center gap-2">
+                {index > 0 && <ArrowRight className="size-4 text-fg-faint" />}
+                <Link
+                  to={`/session/${session.id}`}
+                  className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 transition hover:bg-white/10"
+                >
+                  <span className="text-lg font-bold text-gradient">{session.estimatedLevel}</span>
+                  <span className="text-xs text-fg-faint">{shortDate(session.createdAt)}</span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        )}
+      </Card>
 
       <ChartFrame
         title={t('prog.whenTitle')}

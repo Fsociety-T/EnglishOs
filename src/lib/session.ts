@@ -1,6 +1,17 @@
-import type { Correction, FluencyMetrics, Lesson, PracticeSession, SessionKind } from '@/types'
+import type {
+  CefrLevel,
+  Correction,
+  FluencyMetrics,
+  Lesson,
+  LevelEstimate,
+  PracticeSession,
+  Profile,
+  SessionKind,
+} from '@/types'
 import { ai } from '@/services/ai'
+import type { Review } from '@/services/ai/types'
 import { repo } from '@/services/db'
+import { estimateLevel } from './level'
 import { countWords } from './text'
 import { newId } from './utils'
 
@@ -14,15 +25,17 @@ export interface SubmitInput {
   audioPath?: string | null
 }
 
-/**
- * The one path a finished practice takes, shared by writing and speaking:
- * review it, store the session, turn the mistakes into lessons, and count the
- * time towards today's goal and streak.
- */
-export async function submitPractice(input: SubmitInput): Promise<PracticeSession> {
-  const profile = await repo.getProfile()
-  const sessionId = newId()
+export interface PlacementResult {
+  session: PracticeSession
+  estimate: LevelEstimate
+}
 
+/** Review the work, and attach the corrections to the session they belong to. */
+async function reviewFor(
+  input: SubmitInput,
+  profile: Profile,
+  sessionId: string,
+): Promise<{ review: Review; corrections: Correction[] }> {
   const review =
     input.kind === 'speaking' && input.metrics
       ? await ai.reviewSpeaking({
@@ -45,6 +58,21 @@ export async function submitPractice(input: SubmitInput): Promise<PracticeSessio
     sessionId,
   }))
 
+  return { review, corrections }
+}
+
+/** Store the session, turn the mistakes into lessons, and count the time. */
+async function finish(args: {
+  input: SubmitInput
+  profile: Profile
+  sessionId: string
+  review: Review
+  corrections: Correction[]
+  /** Set only by the placement test. */
+  estimatedLevel: CefrLevel | null
+}): Promise<PracticeSession> {
+  const { input, profile, sessionId, review, corrections, estimatedLevel } = args
+
   const session: PracticeSession = {
     id: sessionId,
     language: profile.language,
@@ -61,6 +89,8 @@ export async function submitPractice(input: SubmitInput): Promise<PracticeSessio
     strengths: review.strengths,
     nextFocus: review.nextFocus,
     metrics: input.metrics ?? null,
+    isPlacement: estimatedLevel !== null,
+    estimatedLevel,
     createdAt: new Date().toISOString(),
   }
 
@@ -99,4 +129,77 @@ export async function submitPractice(input: SubmitInput): Promise<PracticeSessio
   })
 
   return session
+}
+
+/**
+ * The one path a finished practice takes, shared by writing and speaking:
+ * review it, store the session, turn the mistakes into lessons, and count the
+ * time towards today's goal and streak.
+ */
+export async function submitPractice(input: SubmitInput): Promise<PracticeSession> {
+  const profile = await repo.getProfile()
+  const sessionId = newId()
+  const { review, corrections } = await reviewFor(input, profile, sessionId)
+  return finish({ input, profile, sessionId, review, corrections, estimatedLevel: null })
+}
+
+/**
+ * Ask for a CEFR level, and never let that question be the thing that fails.
+ *
+ * The offline estimator is the same code the mock provider runs, so falling
+ * back to it produces a real answer rather than an apology - and the learner
+ * has already written for ten minutes by the time this is called.
+ */
+async function judgeLevel(input: {
+  text: string
+  language: Profile['language']
+  corrections: Correction[]
+}): Promise<LevelEstimate> {
+  try {
+    return await ai.estimateLevel(input)
+  } catch (err) {
+    console.warn('EnglishOS: falling back to the offline level estimate.', err)
+    return estimateLevel({
+      text: input.text,
+      corrections: input.corrections,
+      language: input.language,
+    })
+  }
+}
+
+/**
+ * The placement test.
+ *
+ * It runs the ordinary pipeline first - this is real writing, and it earns
+ * real corrections, real lessons and real minutes - and then asks the one
+ * extra question the test exists for.
+ *
+ * The measured level is saved to `writingLevel` straight away, because the
+ * measurement happened whether or not the learner likes the answer. Only
+ * `profile.level`, the setting the rest of the app works from, waits for them
+ * to accept it on the result screen.
+ */
+export async function submitPlacement(input: SubmitInput): Promise<PlacementResult> {
+  const profile = await repo.getProfile()
+  const sessionId = newId()
+  const { review, corrections } = await reviewFor(input, profile, sessionId)
+
+  const estimate = await judgeLevel({
+    text: input.content,
+    language: profile.language,
+    corrections,
+  })
+
+  const session = await finish({
+    input,
+    profile,
+    sessionId,
+    review,
+    corrections,
+    estimatedLevel: estimate.level,
+  })
+
+  await repo.saveProfile({ ...profile, writingLevel: estimate.level })
+
+  return { session, estimate }
 }
