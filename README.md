@@ -1,6 +1,7 @@
 # EnglishOS
 
-One place to practice English instead of five scattered tools.
+One place to practice a language instead of five scattered tools.
+**English and French**, chosen when you sign up and switchable in Settings.
 
 Write or speak about a topic, get corrected, and turn your own mistakes into the
 exact grammar lessons you need. Save the words you like, keep a shelf of podcasts
@@ -18,6 +19,10 @@ to watch later, and watch your weak areas get stronger over time.
 | **Vocabulary** | A word notebook with Leitner spaced repetition (1 / 3 / 7 / 21 / 60 days) and flashcards. |
 | **Podcasts** | Paste a YouTube or Spotify link, watch it in-app, and take timestamped notes. Any word goes straight to the notebook. |
 | **Progress** | Streaks, daily goal, activity heatmap, score trends, and a breakdown of which grammar areas are improving. |
+| **Two languages** | English and French. Not a translated shell: each has its own interface text, grammar rules, lessons, practice topics and vocabulary. French adds gender agreement and accents as error types, which English does not have. |
+
+Your history is filed per language, so switching to French shows your French
+sessions and lessons only — the two never mix.
 
 Built as a PWA, so the finished website installs as a real app on phone and desktop.
 
@@ -52,6 +57,11 @@ One-time, in the GitHub repository:
 
 Without those secrets the app still builds and runs in **demo mode**, storing
 data in the browser's `localStorage` with no account required.
+
+3. Run `supabase/schema.sql` in the Supabase SQL editor. It is safe to re-run,
+   and re-running is what adds the `language` columns to a project created
+   before the French version existed. Accounts from before that point stay on
+   English with their history intact.
 
 ## Running locally (optional)
 

@@ -11,6 +11,17 @@ import type { Rule } from './rules'
  * correction teaches the learner something false.
  */
 
+/**
+ * Word boundaries for French.
+ *
+ * JavaScript's \b is defined on [A-Za-z0-9_], so it does not see an accented
+ * letter as part of a word: /\bà\b/ never matches "à" after a space, and a
+ * pattern ending in "é\b" never matches at all. These two lookarounds are the
+ * accent-aware replacement, and every rule touching an accented edge uses them.
+ */
+const NOT_LETTER_BEFORE = '(?<![A-Za-zÀ-ÿ])'
+const NOT_LETTER_AFTER = '(?![A-Za-zÀ-ÿ])'
+
 /** Copy the capitalisation of `source` onto `target`. */
 function matchCase(source: string, target: string): string {
   if (source[0] && source[0] === source[0].toUpperCase()) {
@@ -94,7 +105,7 @@ export const FR_RULES: Rule[] = [
     // "je veux mangé" -> "je veux manger". After a conjugated verb that takes
     // an infinitive, the -é form is wrong.
     pattern: new RegExp(
-      String.raw`\b(veux|veut|voulons|voulez|veulent|peux|peut|pouvons|pouvez|peuvent|dois|doit|devons|devez|doivent|vais|vas|va|allons|allez|vont)\s+(${ER_STEM})é\b`,
+      String.raw`\b(veux|veut|voulons|voulez|veulent|peux|peut|pouvons|pouvez|peuvent|dois|doit|devons|devez|doivent|vais|vas|va|allons|allez|vont)\s+(${ER_STEM})é${NOT_LETTER_AFTER}`,
       'gi',
     ),
     errorType: 'accent',
@@ -107,7 +118,7 @@ export const FR_RULES: Rule[] = [
   // --- Contracted articles --------------------------------------------------
   {
     id: 'fr-a-le',
-    pattern: /\bà\s+le\b/gi,
+    pattern: new RegExp(`${NOT_LETTER_BEFORE}à\\s+le${NOT_LETTER_AFTER}`, 'gi'),
     errorType: 'article',
     severity: 'major',
     fix: (m) => matchCase(m[0], 'au'),
@@ -115,7 +126,7 @@ export const FR_RULES: Rule[] = [
   },
   {
     id: 'fr-a-les',
-    pattern: /\bà\s+les\b/gi,
+    pattern: new RegExp(`${NOT_LETTER_BEFORE}à\\s+les${NOT_LETTER_AFTER}`, 'gi'),
     errorType: 'article',
     severity: 'major',
     fix: (m) => matchCase(m[0], 'aux'),
@@ -178,7 +189,7 @@ export const FR_RULES: Rule[] = [
     pattern: new RegExp(String.raw`\bnous\s+(${ER_STEM})(?:e|es|ent)\b`, 'gi'),
     errorType: 'subject-verb-agreement',
     severity: 'major',
-    fix: (m) => `nous ${m[1]}ons`,
+    fix: (m) => `${matchCase(m[0], 'nous')} ${m[1]}ons`,
     explanation: 'Avec « nous », le verbe en -er prend la terminaison -ons : nous parlons.',
   },
   {
@@ -186,7 +197,7 @@ export const FR_RULES: Rule[] = [
     pattern: new RegExp(String.raw`\bvous\s+(${ER_STEM})(?:e|es|ent|ons)\b`, 'gi'),
     errorType: 'subject-verb-agreement',
     severity: 'major',
-    fix: (m) => `vous ${m[1]}ez`,
+    fix: (m) => `${matchCase(m[0], 'vous')} ${m[1]}ez`,
     explanation: 'Avec « vous », le verbe en -er prend la terminaison -ez : vous parlez.',
   },
   {
@@ -194,7 +205,7 @@ export const FR_RULES: Rule[] = [
     pattern: new RegExp(String.raw`\bje\s+(${ER_STEM})(?:es|ent|ons|ez)\b`, 'gi'),
     errorType: 'subject-verb-agreement',
     severity: 'major',
-    fix: (m) => `je ${m[1]}e`,
+    fix: (m) => `${matchCase(m[0], 'je')} ${m[1]}e`,
     explanation: 'Avec « je », le verbe en -er se termine par -e : je parle.',
   },
 
@@ -217,7 +228,7 @@ export const FR_RULES: Rule[] = [
         ils: 'ils ont',
         elles: 'elles ont',
       }
-      return `${avoir[subject.toLowerCase()] ?? 'j’ai'} ${m[2]} ans`
+      return `${matchCase(m[0], avoir[subject.toLowerCase()] ?? 'j’ai')} ${m[2]} ans`
     },
     explanation:
       'En français, l’âge se dit avec « avoir », pas « être » : j’ai vingt ans. C’est l’inverse de l’anglais.',
@@ -233,10 +244,13 @@ export const FR_RULES: Rule[] = [
   },
   {
     id: 'fr-a-country-feminine',
-    pattern: /\bà\s+(France|Belgique|Suisse|Espagne|Italie|Allemagne|Chine|Russie|Turquie|Grèce)\b/gi,
+    pattern: new RegExp(
+      `${NOT_LETTER_BEFORE}à\\s+(France|Belgique|Suisse|Espagne|Italie|Allemagne|Chine|Russie|Turquie|Grèce)${NOT_LETTER_AFTER}`,
+      'gi',
+    ),
     errorType: 'preposition',
     severity: 'moderate',
-    fix: (m) => `en ${m[1]}`,
+    fix: (m) => `${matchCase(m[0], 'en')} ${m[1]}`,
     explanation:
       'Devant un pays féminin, on utilise « en » : en France, en Espagne. « à » s’emploie pour les villes.',
   },
@@ -291,7 +305,7 @@ export const FR_RULES: Rule[] = [
     pattern: /\bleurs\s+(ai|as|a|avons|avez|ont|dis|dit|donne|donné|parle|parlé)\b/gi,
     errorType: 'spelling',
     severity: 'moderate',
-    fix: (m) => `leur ${m[1]}`,
+    fix: (m) => `${matchCase(m[0], 'leur')} ${m[1]}`,
     explanation:
       'Devant un verbe, « leur » est un pronom et ne prend jamais de -s. « Leurs » n’existe que devant un nom pluriel.',
   },
@@ -300,7 +314,7 @@ export const FR_RULES: Rule[] = [
     pattern: /\bsa\s+(va|suffit|m’est|dépend)\b/gi,
     errorType: 'spelling',
     severity: 'moderate',
-    fix: (m) => `ça ${m[1]}`,
+    fix: (m) => `${matchCase(m[0], 'ça')} ${m[1]}`,
     explanation: '« ça » remplace « cela ». « sa » est un possessif : sa voiture.',
   },
 

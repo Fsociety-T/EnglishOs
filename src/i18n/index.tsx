@@ -61,6 +61,21 @@ function interpolate(template: string, vars?: Record<string, string | number>): 
   )
 }
 
+/**
+ * Translate outside React, using the cached language.
+ *
+ * The error boundary needs this: it wraps the provider, so it renders when no
+ * context exists - and a crash screen in the wrong language is exactly when a
+ * learner is least able to cope with one.
+ */
+export function translateStatic(
+  key: StringKey,
+  vars?: Record<string, string | number>,
+): string {
+  const language = readCache()
+  return interpolate(STRINGS[language][key] ?? STRINGS.en[key] ?? key, vars)
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<LearningLanguage>(readCache)
 

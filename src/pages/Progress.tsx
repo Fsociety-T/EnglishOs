@@ -9,7 +9,7 @@ import {
   TrendArea,
 } from '@/components/charts'
 import { Button, Card, EmptyState, StatTile, Spinner } from '@/components/ui'
-import { useLanguage } from '@/i18n'
+import { useLanguage, useT } from '@/i18n'
 import { useSessions, useVocabulary } from '@/hooks/useContent'
 import { useAsync } from '@/hooks/useAsync'
 import { computeStreak } from '@/lib/streak'
@@ -24,6 +24,7 @@ function shortDate(iso: string): string {
 export default function Progress() {
   const repo = useRepo()
   const { language } = useLanguage()
+  const t = useT()
   const [showTable, setShowTable] = useState(false)
 
   const { data: stats, loading } = useAsync(() => repo.listDailyStats(), [])
@@ -92,23 +93,23 @@ export default function Progress() {
   const totalWords = allStats.reduce((sum, s) => sum + s.wordsWritten, 0)
   const latest = scoreSeries[scoreSeries.length - 1]
 
-  if (loading) return <Spinner label="Loading your progress..." />
+  if (loading) return <Spinner label={t('prog.loading')} />
 
   if (allSessions.length === 0 && totalMinutes === 0) {
     return (
       <div className="space-y-8">
         <header>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Progress</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('prog.title')}</h1>
         </header>
         <EmptyState
           icon={<TrendingUp className="size-6" />}
-          title="Nothing to chart yet"
-          body="Once you have practised a few times, this page shows whether your weak areas are actually getting stronger - not just how much you did."
+          title={t('prog.emptyTitle')}
+          body={t('prog.emptyBody')}
           action={
             <Link to="/write">
               <Button>
                 <PenLine className="size-4" />
-                Do your first session
+                {t('prog.firstSession')}
               </Button>
             </Link>
           }
@@ -120,35 +121,33 @@ export default function Progress() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Progress</h1>
-        <p className="mt-1 text-sm text-fg-muted">
-          The number that matters most is your mistake rate going down, not your hours going up.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('prog.title')}</h1>
+        <p className="mt-1 text-sm text-fg-muted">{t('prog.subtitle')}</p>
       </header>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
-          label="Current streak"
+          label={t('prog.currentStreak')}
           value={streak.current}
           unit={streak.current === 1 ? 'day' : 'days'}
           tone="warn"
           icon={<Flame className="size-4" />}
         />
         <StatTile
-          label="Best streak"
+          label={t('prog.bestStreak')}
           value={streak.best}
           unit="days"
           icon={<Target className="size-4" />}
         />
         <StatTile
-          label="Total practice"
+          label={t('prog.totalPractice')}
           value={totalMinutes >= 60 ? Math.round(totalMinutes / 60) : totalMinutes}
           unit={totalMinutes >= 60 ? 'hours' : 'min'}
           tone="cyan"
           icon={<Clock className="size-4" />}
         />
         <StatTile
-          label="Words saved"
+          label={t('prog.wordsSaved')}
           value={(vocabulary ?? []).length}
           tone="good"
           icon={<BookMarked className="size-4" />}
@@ -156,16 +155,16 @@ export default function Progress() {
       </div>
 
       <ChartFrame
-        title="When you practise"
-        subtitle="Every square is a day. Darker means more minutes."
+        title={t('prog.whenTitle')}
+        subtitle={t('prog.whenSub')}
       >
         <ActivityHeatmap days={heatmapDays} />
       </ChartFrame>
 
       {errorRateSeries.length >= 2 && (
         <ChartFrame
-          title="Mistakes per 100 words"
-          subtitle="This is the line you want going down. It is fair across long and short sessions."
+          title={t('prog.mistakesTitle')}
+          subtitle={t('prog.mistakesSub')}
         >
           <TrendArea data={errorRateSeries} dataKey="rate" color="var(--color-cyan)" />
         </ChartFrame>
@@ -173,12 +172,12 @@ export default function Progress() {
 
       {scoreSeries.length >= 2 && (
         <ChartFrame
-          title="Overall score by session"
-          subtitle="Each point is one piece of writing or speaking."
+          title={t('prog.scoreTitle')}
+          subtitle={t('prog.scoreSub')}
           action={
             <Button variant="ghost" onClick={() => setShowTable((v) => !v)} className="px-2 py-1">
               <Table2 className="size-4" />
-              {showTable ? 'Chart' : 'Table'}
+              {showTable ? t('prog.chart') : t('prog.table')}
             </Button>
           }
         >
@@ -187,11 +186,11 @@ export default function Progress() {
               <table className="w-full text-left text-sm">
                 <thead className="text-fg-faint">
                   <tr className="border-b border-white/10">
-                    <th className="py-2 pr-4 font-medium">Date</th>
-                    <th className="py-2 pr-4 font-medium">Overall</th>
-                    <th className="py-2 pr-4 font-medium">Grammar</th>
-                    <th className="py-2 pr-4 font-medium">Vocabulary</th>
-                    <th className="py-2 font-medium">Fluency</th>
+                    <th className="py-2 pr-4 font-medium">{t('prog.colDate')}</th>
+                    <th className="py-2 pr-4 font-medium">{t('prog.colOverall')}</th>
+                    <th className="py-2 pr-4 font-medium">{t('prog.colGrammar')}</th>
+                    <th className="py-2 pr-4 font-medium">{t('prog.colVocabulary')}</th>
+                    <th className="py-2 font-medium">{t('prog.colFluency')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -217,44 +216,45 @@ export default function Progress() {
       {scoreSeries.length >= 2 && latest && (
         <section>
           <div className="mb-3">
-            <h3 className="font-semibold text-fg">Each skill on its own</h3>
-            <p className="mt-0.5 text-sm text-fg-faint">
-              Shown separately so one weak area cannot hide behind a strong one.
-            </p>
+            <h3 className="font-semibold text-fg">{t('prog.eachSkill')}</h3>
+            <p className="mt-0.5 text-sm text-fg-faint">{t('prog.eachSkillSub')}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
-            <Sparkline data={scoreSeries} dataKey="grammar" title="Grammar" latest={latest.grammar} />
+            <Sparkline data={scoreSeries} dataKey="grammar" title={t('prog.colGrammar')} latest={latest.grammar} />
             <Sparkline
               data={scoreSeries}
               dataKey="vocabulary"
-              title="Vocabulary"
+              title={t('prog.colVocabulary')}
               latest={latest.vocabulary}
             />
-            <Sparkline data={scoreSeries} dataKey="fluency" title="Fluency" latest={latest.fluency} />
+            <Sparkline data={scoreSeries} dataKey="fluency" title={t('prog.colFluency')} latest={latest.fluency} />
           </div>
         </section>
       )}
 
       {errorBreakdown.length > 0 && (
         <ChartFrame
-          title="What you get wrong most"
-          subtitle="Every correction you have received, grouped by type."
+          title={t('prog.breakdownTitle')}
+          subtitle={t('prog.breakdownSub')}
         >
           <MagnitudeBars data={errorBreakdown} height={Math.max(180, errorBreakdown.length * 34)} />
         </ChartFrame>
       )}
 
       {minutesSeries.length >= 2 && (
-        <ChartFrame title="Minutes practised" subtitle="Last 30 days of activity.">
+        <ChartFrame title={t('prog.minutesTitle')} subtitle={t('prog.minutesSub')}>
           <TrendArea data={minutesSeries} dataKey="minutes" unit="min" color="var(--color-cyan)" />
         </ChartFrame>
       )}
 
       <Card>
         <p className="text-sm leading-relaxed text-fg-muted">
-          You have written <span className="font-semibold text-fg">{totalWords.toLocaleString()}</span>{' '}
-          words across <span className="font-semibold text-fg">{allSessions.length}</span>{' '}
-          {allSessions.length === 1 ? 'session' : 'sessions'}.
+          {allSessions.length === 1
+            ? t('prog.summaryOne', { words: totalWords.toLocaleString() })
+            : t('prog.summaryMany', {
+                words: totalWords.toLocaleString(),
+                count: allSessions.length,
+              })}
         </p>
       </Card>
     </div>

@@ -2,17 +2,18 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, BookmarkPlus, Check, ExternalLink, Plus, Trash2 } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, SectionHeading, Spinner, Tabs } from '@/components/ui'
-import { useLanguage } from '@/i18n'
+import { useLanguage, useT } from '@/i18n'
 import { useAsync } from '@/hooks/useAsync'
 import { formatTimestamp, parseMediaUrl } from '@/lib/media'
 import { newId } from '@/lib/utils'
 import { useRepo } from '@/services/db'
+import type { StringKey } from '@/i18n/strings'
 import type { PodcastStatus } from '@/types'
 
-const STATUS_TABS: { id: PodcastStatus; label: string }[] = [
-  { id: 'to-watch', label: 'To watch' },
-  { id: 'watching', label: 'Watching' },
-  { id: 'done', label: 'Done' },
+const STATUS_TABS: { id: PodcastStatus; labelKey: StringKey }[] = [
+  { id: 'to-watch', labelKey: 'pod.toWatch' },
+  { id: 'watching', labelKey: 'pod.watching' },
+  { id: 'done', labelKey: 'pod.done' },
 ]
 
 export default function PodcastDetail() {
@@ -20,6 +21,7 @@ export default function PodcastDetail() {
   const navigate = useNavigate()
   const repo = useRepo()
   const { language } = useLanguage()
+  const t = useT()
 
   const [noteText, setNoteText] = useState('')
   const [stampMinutes, setStampMinutes] = useState('')
@@ -34,15 +36,15 @@ export default function PodcastDetail() {
     [id],
   )
 
-  if (loading) return <Spinner label="Loading..." />
+  if (loading) return <Spinner label={t('common.loading')} />
 
   if (!podcast) {
     return (
       <Card>
-        <p className="text-fg-muted">That podcast could not be found.</p>
+        <p className="text-fg-muted">{t('pod.notFound')}</p>
         <div className="mt-4">
           <Link to="/podcasts">
-            <Button variant="outline">Back to shelf</Button>
+            <Button variant="outline">{t('pod.backToShelf')}</Button>
           </Link>
         </div>
       </Card>
@@ -116,7 +118,7 @@ export default function PodcastDetail() {
         className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition hover:text-fg"
       >
         <ArrowLeft className="size-4" />
-        Back to shelf
+        {t('pod.backToShelf')}
       </button>
 
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -127,14 +129,14 @@ export default function PodcastDetail() {
           rel="noreferrer"
           className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition hover:text-fg"
         >
-          Open original
+          {t('pod.openOriginal')}
           <ExternalLink className="size-3.5" />
         </a>
       </header>
 
       <div className="max-w-sm">
         <Tabs
-          tabs={STATUS_TABS}
+          tabs={STATUS_TABS.map(({ id, labelKey }) => ({ id, label: t(labelKey) }))}
           active={podcast.status}
           onChange={async (status) => {
             await repo.updatePodcast(podcast.id, { status })
@@ -161,13 +163,12 @@ export default function PodcastDetail() {
           ) : (
             <Card>
               <p className="text-sm leading-relaxed text-fg-muted">
-                This link cannot be embedded here. Open it in a new tab and keep this page beside
-                it to take notes.
+                {t('pod.noEmbed')}
               </p>
               <div className="mt-4">
                 <a href={podcast.url} target="_blank" rel="noreferrer">
                   <Button variant="outline">
-                    Open in a new tab
+                    {t('pod.openNewTab')}
                     <ExternalLink className="size-4" />
                   </Button>
                 </a>
@@ -179,15 +180,15 @@ export default function PodcastDetail() {
         {/* Notes */}
         <div className="space-y-4">
           <SectionHeading
-            title="Notes"
-            subtitle="Write down anything you want to remember."
+            title={t('pod.notes')}
+            subtitle={t('pod.notesSub')}
           />
 
           <Card>
             <textarea
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
-              placeholder="A word, a phrase, or an idea you liked..."
+              placeholder={t('pod.notePlaceholder')}
               className="min-h-24 w-full resize-y bg-transparent text-sm leading-relaxed text-fg outline-none placeholder:text-fg-faint"
             />
             <div className="mt-3 flex gap-2">
@@ -195,20 +196,20 @@ export default function PodcastDetail() {
                 value={stampMinutes}
                 onChange={(e) => setStampMinutes(e.target.value)}
                 placeholder="12:30"
-                title="Where in the episode? Optional."
+                title={t('pod.timestampTitle')}
                 className={`${inputClass} w-24 shrink-0 text-center`}
               />
               <Button onClick={addNote} disabled={!noteText.trim()} className="flex-1">
                 <Plus className="size-4" />
-                Add note
+                {t('pod.addNote')}
               </Button>
             </div>
           </Card>
 
           {(notes ?? []).length === 0 ? (
             <EmptyState
-              title="No notes yet"
-              body="Your notes will appear here, ordered by where they happen in the episode."
+              title={t('pod.noNotesTitle')}
+              body={t('pod.noNotesBody')}
             />
           ) : (
             <div className="space-y-2">
@@ -226,8 +227,8 @@ export default function PodcastDetail() {
                     <div className="flex shrink-0 gap-1">
                       <button
                         type="button"
-                        aria-label="Save as a word"
-                        title="Save to my word notebook"
+                        aria-label={t('pod.saveAsWord')}
+                        title={t('pod.saveToNotebook')}
                         onClick={() => saveWordFromNote(note.id, note.note)}
                         disabled={savedWords.has(note.id)}
                         className="rounded-lg p-1.5 text-fg-faint transition hover:bg-violet/15 hover:text-violet-soft disabled:opacity-40"
@@ -240,7 +241,7 @@ export default function PodcastDetail() {
                       </button>
                       <button
                         type="button"
-                        aria-label="Delete note"
+                        aria-label={t('pod.deleteNote')}
                         onClick={async () => {
                           await repo.deleteNote(note.id)
                           reloadNotes()

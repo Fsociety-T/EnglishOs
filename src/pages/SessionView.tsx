@@ -13,7 +13,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { Badge, Button, Card, ProgressRing, SectionHeading, Spinner, Tabs } from '@/components/ui'
-import { useLanguage } from '@/i18n'
+import { useLanguage, useT } from '@/i18n'
 import { useLessons } from '@/hooks/useContent'
 import { useAsync } from '@/hooks/useAsync'
 import { ERROR_TONE, SEVERITY_LABEL, scoreTone } from '@/lib/errorStyles'
@@ -75,6 +75,7 @@ export default function SessionView() {
   const navigate = useNavigate()
   const repo = useRepo()
   const { language } = useLanguage()
+  const t = useT()
 
   const [view, setView] = useState<'yours' | 'corrected'>('yours')
   const [selected, setSelected] = useState<Correction | null>(null)
@@ -132,7 +133,7 @@ export default function SessionView() {
     setSavedWords((prev) => new Set(prev).add(word.word))
   }
 
-  if (loading) return <Spinner label="Loading your session..." />
+  if (loading) return <Spinner label={t('session.loading')} />
 
   if (!session) {
     return (
@@ -140,7 +141,7 @@ export default function SessionView() {
         <p className="text-fg-muted">That session could not be found.</p>
         <div className="mt-4">
           <Link to="/">
-            <Button variant="outline">Back to dashboard</Button>
+            <Button variant="outline">{t('session.backToDashboard')}</Button>
           </Link>
         </div>
       </Card>
@@ -157,7 +158,7 @@ export default function SessionView() {
         className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition hover:text-fg"
       >
         <ArrowLeft className="size-4" />
-        Back
+        {t('common.back')}
       </button>
 
       {/* Header */}
@@ -166,15 +167,15 @@ export default function SessionView() {
           <Badge tone="violet">
             {session.kind === 'writing' ? (
               <>
-                <PenLine className="size-3" /> Writing
+                <PenLine className="size-3" /> {t('session.writing')}
               </>
             ) : (
               <>
-                <Mic className="size-3" /> Speaking
+                <Mic className="size-3" /> {t('session.speaking')}
               </>
             )}
           </Badge>
-          <Badge>{session.wordCount} words</Badge>
+          <Badge>{t('session.words', { count: session.wordCount })}</Badge>
           <Badge>{formatDuration(session.durationSeconds)}</Badge>
           <span className="text-sm text-fg-faint">{formatRelative(session.createdAt)}</span>
         </div>
@@ -183,12 +184,12 @@ export default function SessionView() {
 
       {/* Scores */}
       <Card className="flex flex-col items-center gap-6 sm:flex-row sm:gap-8">
-        <ProgressRing value={session.scores.overall} sublabel="overall" size={124} />
+        <ProgressRing value={session.scores.overall} sublabel={t('session.overall')} size={124} />
         <div className="w-full flex-1 space-y-3">
-          <ScoreBar label="Grammar" value={session.scores.grammar} />
-          <ScoreBar label="Vocabulary" value={session.scores.vocabulary} />
+          <ScoreBar label={t('session.grammar')} value={session.scores.grammar} />
+          <ScoreBar label={t('session.vocabulary')} value={session.scores.vocabulary} />
           <ScoreBar
-            label={session.kind === 'speaking' ? 'Fluency' : 'Sentence flow'}
+            label={t(session.kind === 'speaking' ? 'session.fluency' : 'session.sentenceFlow')}
             value={session.scores.fluency}
           />
         </div>
@@ -198,8 +199,7 @@ export default function SessionView() {
         <p className="leading-relaxed text-fg">{session.summary}</p>
         {!ai.isReal && (
           <p className="mt-3 text-xs leading-relaxed text-fg-faint">
-            Checked by the offline practice engine. It finds common mistakes reliably, but it is
-            not the full AI yet, so it will miss things a real reviewer would catch.
+            {t('session.mockNotice')}
           </p>
         )}
       </Card>
@@ -208,22 +208,22 @@ export default function SessionView() {
       {session.metrics && (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Card className="p-4">
-            <p className="text-xs text-fg-faint">Speed</p>
+            <p className="text-xs text-fg-faint">{t('session.speed')}</p>
             <p className="mt-1 text-xl font-bold">
               {session.metrics.wordsPerMinute}
               <span className="ml-1 text-sm font-medium text-fg-faint">wpm</span>
             </p>
           </Card>
           <Card className="p-4">
-            <p className="text-xs text-fg-faint">Filler words</p>
+            <p className="text-xs text-fg-faint">{t('session.fillerWords')}</p>
             <p className="mt-1 text-xl font-bold">{session.metrics.fillerCount}</p>
           </Card>
           <Card className="p-4">
-            <p className="text-xs text-fg-faint">Long pauses</p>
+            <p className="text-xs text-fg-faint">{t('session.longPauses')}</p>
             <p className="mt-1 text-xl font-bold">{session.metrics.longPauses}</p>
           </Card>
           <Card className="p-4">
-            <p className="text-xs text-fg-faint">Word variety</p>
+            <p className="text-xs text-fg-faint">{t('session.wordVariety')}</p>
             <p className="mt-1 text-xl font-bold">
               {Math.round(session.metrics.uniqueWordRatio * 100)}
               <span className="ml-0.5 text-sm font-medium text-fg-faint">%</span>
@@ -235,14 +235,18 @@ export default function SessionView() {
       {/* The text */}
       <section>
         <SectionHeading
-          title={errorCount === 0 ? 'Your text' : `Your text with ${errorCount} corrections`}
-          subtitle={errorCount === 0 ? undefined : 'Tap any highlighted part to see why.'}
+          title={
+            errorCount === 0
+              ? t('session.yourText')
+              : t('session.yourTextWith', { count: errorCount })
+          }
+          subtitle={errorCount === 0 ? undefined : t('session.tapHighlight')}
         />
         <div className="mb-3 max-w-xs">
           <Tabs
             tabs={[
-              { id: 'yours', label: 'What you wrote' },
-              { id: 'corrected', label: 'Corrected' },
+              { id: 'yours', label: t('session.tabYours') },
+              { id: 'corrected', label: t('session.tabCorrected') },
             ]}
             active={view}
             onChange={setView}
@@ -311,7 +315,7 @@ export default function SessionView() {
       {/* All corrections */}
       {errorCount > 0 && (
         <section>
-          <SectionHeading title="Every correction" />
+          <SectionHeading title={t('session.everyCorrection')} />
           <div className="space-y-2">
             {[...session.corrections]
               .sort((a, b) => a.charStart - b.charStart)
@@ -346,7 +350,7 @@ export default function SessionView() {
         <Card>
           <h3 className="flex items-center gap-2 font-semibold">
             <CheckCircle2 className="size-4 text-good" />
-            What went well
+            {t('session.wentWell')}
           </h3>
           <ul className="mt-3 space-y-2">
             {session.strengths.map((s) => (
@@ -360,7 +364,7 @@ export default function SessionView() {
         <Card>
           <h3 className="flex items-center gap-2 font-semibold">
             <TrendingUp className="size-4 text-violet-soft" />
-            Work on this next
+            {t('session.workNext')}
           </h3>
           {session.nextFocus.length > 0 ? (
             <ul className="mt-3 space-y-2">
@@ -372,7 +376,7 @@ export default function SessionView() {
             </ul>
           ) : (
             <p className="mt-3 text-sm text-fg-muted">
-              Nothing specific this time. Try a harder topic to find your next weak spot.
+              {t('session.nothingSpecific')}
             </p>
           )}
         </Card>
@@ -382,8 +386,8 @@ export default function SessionView() {
       {sessionLessons.length > 0 && (
         <section>
           <SectionHeading
-            title="Lessons made from your mistakes"
-            subtitle="Short, targeted, and based on what you actually wrote."
+            title={t('session.lessonsTitle')}
+            subtitle={t('session.lessonsSub')}
           />
           <div className="grid gap-3 sm:grid-cols-2">
             {sessionLessons.map((lesson) => (
@@ -394,7 +398,8 @@ export default function SessionView() {
                   </span>
                   <p className="mt-3 font-medium text-fg">{lesson.title}</p>
                   <p className="mt-1 text-sm text-fg-faint">
-                    {ERROR_TYPE_LABEL[language][lesson.errorType]} &middot; {lesson.exercises.length} questions
+                    {ERROR_TYPE_LABEL[language][lesson.errorType]} &middot;{' '}
+                    {t('session.questions', { count: lesson.exercises.length })}
                   </p>
                 </Card>
               </Link>
@@ -407,8 +412,8 @@ export default function SessionView() {
       {(suggestions ?? []).length > 0 && (
         <section>
           <SectionHeading
-            title="Words worth learning"
-            subtitle="Useful words you did not use. Save any you like."
+            title={t('session.wordsTitle')}
+            subtitle={t('session.wordsSub')}
           />
           <div className="grid gap-3 sm:grid-cols-2">
             {(suggestions ?? []).map((suggestion) => {
@@ -431,7 +436,7 @@ export default function SessionView() {
                     variant={saved ? 'ghost' : 'outline'}
                     onClick={() => saveWord(suggestion)}
                     disabled={saved}
-                    title={saved ? 'Saved to your notebook' : 'Save to your notebook'}
+                    title={t(saved ? 'session.savedToNotebook' : 'session.saveToNotebook')}
                     className="shrink-0 px-3"
                   >
                     {saved ? <Check className="size-4 text-good" /> : <BookmarkPlus className="size-4" />}
@@ -447,13 +452,13 @@ export default function SessionView() {
         <Link to={session.kind === 'writing' ? '/write' : '/speak'}>
           <Button>
             <RotateCcw className="size-4" />
-            Practise again
+            {t('session.practiseAgain')}
           </Button>
         </Link>
         <Link to="/lessons">
           <Button variant="outline">
             <Sparkles className="size-4" />
-            Study my weak areas
+            {t('session.studyWeak')}
           </Button>
         </Link>
       </div>
