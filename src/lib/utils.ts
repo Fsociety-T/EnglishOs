@@ -7,9 +7,14 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
-/** Short, collision-resistant enough for a single-user app. */
-export function newId(prefix = 'id'): string {
-  return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
+/**
+ * Every id the app generates ends up in a Postgres `uuid` column, so it has to
+ * be a real UUID — a friendlier `ses_ab12cd` reads better in the console but is
+ * rejected on insert. Requires a secure context, which both GitHub Pages and
+ * localhost provide.
+ */
+export function newId(): string {
+  return crypto.randomUUID()
 }
 
 /** Local calendar day as yyyy-mm-dd. Never use toISOString here - that is UTC

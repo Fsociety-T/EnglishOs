@@ -284,7 +284,7 @@ export const mockProvider: AiProvider = {
           title: template.title,
           body: template.body,
           examples: template.examples,
-          exercises: template.exercises.map((e) => ({ ...e, id: newId('ex') })),
+          exercises: template.exercises.map((e) => ({ ...e, id: newId() })),
           sourceSessionId: first?.sessionId ?? null,
           sourceSentence: sourceText
             ? sentenceAt(sourceText, first?.charStart ?? 0)

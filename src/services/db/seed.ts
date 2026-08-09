@@ -25,14 +25,14 @@ const SAMPLE_TEXT =
   "Last weekend i went to the market with my brother. We didn't went there for a long time, so it was nice. There is many small shops and the people is very friendly. My brother is good in finding cheap things, and he always make a photo of everything. I bought alot of fruit and some informations about a cooking class. It depends of my schedule, but i want to join it. I have 24 years and i think learning new things is crucial."
 
 export function seedStore(store: Store): Store {
-  const sessionId = newId('ses')
+  const sessionId = newId()
   const content = SAMPLE_TEXT
 
   // Offsets are approximate here on purpose - this is illustrative history, not
   // a graded session. Real sessions get exact offsets from the rule scanner.
   const corrections = [
     {
-      id: newId('cor'),
+      id: newId(),
       sessionId,
       original: 'i went',
       corrected: 'I went',
@@ -43,7 +43,7 @@ export function seedStore(store: Store): Store {
       charEnd: content.indexOf('i went') + 6,
     },
     {
-      id: newId('cor'),
+      id: newId(),
       sessionId,
       original: "didn't went",
       corrected: "didn't go",
@@ -54,7 +54,7 @@ export function seedStore(store: Store): Store {
       charEnd: content.indexOf("didn't went") + 11,
     },
     {
-      id: newId('cor'),
+      id: newId(),
       sessionId,
       original: 'There is many',
       corrected: 'There are many',
@@ -65,7 +65,7 @@ export function seedStore(store: Store): Store {
       charEnd: content.indexOf('There is many') + 13,
     },
     {
-      id: newId('cor'),
+      id: newId(),
       sessionId,
       original: 'people is',
       corrected: 'people are',
@@ -76,7 +76,7 @@ export function seedStore(store: Store): Store {
       charEnd: content.indexOf('people is') + 9,
     },
     {
-      id: newId('cor'),
+      id: newId(),
       sessionId,
       original: 'good in',
       corrected: 'good at',
@@ -87,7 +87,7 @@ export function seedStore(store: Store): Store {
       charEnd: content.indexOf('good in') + 7,
     },
     {
-      id: newId('cor'),
+      id: newId(),
       sessionId,
       original: 'depends of',
       corrected: 'depends on',
@@ -124,12 +124,12 @@ export function seedStore(store: Store): Store {
   store.lessons = (['preposition', 'subject-verb-agreement'] as const).map((errorType, i) => {
     const template = LESSON_LIBRARY[errorType]
     return {
-      id: newId('les'),
+      id: newId(),
       errorType,
       title: template.title,
       body: template.body,
       examples: template.examples,
-      exercises: template.exercises.map((e) => ({ ...e, id: newId('ex') })),
+      exercises: template.exercises.map((e) => ({ ...e, id: newId() })),
       sourceSessionId: sessionId,
       sourceSentence:
         i === 0
@@ -142,7 +142,7 @@ export function seedStore(store: Store): Store {
 
   store.vocabulary = [
     {
-      id: newId('voc'),
+      id: newId(),
       word: 'crucial',
       phonetic: '/ˈkruːʃl/',
       partOfSpeech: 'adjective',
@@ -156,7 +156,7 @@ export function seedStore(store: Store): Store {
       createdAt: daysAgo(2),
     },
     {
-      id: newId('voc'),
+      id: newId(),
       word: 'gradually',
       phonetic: '/ˈɡrædʒuəli/',
       partOfSpeech: 'adverb',
@@ -169,7 +169,7 @@ export function seedStore(store: Store): Store {
       createdAt: daysAgo(1),
     },
     {
-      id: newId('voc'),
+      id: newId(),
       word: 'resilient',
       phonetic: '/rɪˈzɪliənt/',
       partOfSpeech: 'adjective',
@@ -185,7 +185,7 @@ export function seedStore(store: Store): Store {
 
   store.podcasts = [
     {
-      id: newId('pod'),
+      id: newId(),
       title: 'How to learn any language faster',
       url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       platform: 'youtube',

@@ -65,7 +65,7 @@ export default function PodcastDetail() {
     const text = noteText.trim()
     if (!text || !podcast) return
     await repo.addNote({
-      id: newId('note'),
+      id: newId(),
       podcastId: podcast.id,
       timestampSeconds: parseStamp(stampMinutes),
       note: text,
@@ -87,7 +87,7 @@ export default function PodcastDetail() {
     const firstLine = note.split(/[.\n]/)[0].trim()
     const word = firstLine.split(/\s+/).slice(0, 3).join(' ')
     await repo.addWord({
-      id: newId('voc'),
+      id: newId(),
       word,
       definition: note,
       example: '',

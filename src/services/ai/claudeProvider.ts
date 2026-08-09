@@ -59,7 +59,7 @@ export const claudeProvider: AiProvider = {
     // Exercise IDs only identify UI choices and are not meaningful to the model.
     return lessons.map((lesson) => ({
       ...lesson,
-      exercises: lesson.exercises.map((exercise) => ({ ...exercise, id: newId('ex') })),
+      exercises: lesson.exercises.map((exercise) => ({ ...exercise, id: newId() })),
     }))
   },
 

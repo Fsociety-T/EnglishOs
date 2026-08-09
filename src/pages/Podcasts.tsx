@@ -42,7 +42,7 @@ export default function Podcasts() {
     }
 
     await repo.addPodcast({
-      id: newId('pod'),
+      id: newId(),
       title: title.trim() || guessTitle(trimmed, parsed.platform),
       url: trimmed,
       platform: parsed.platform,
