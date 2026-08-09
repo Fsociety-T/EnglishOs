@@ -29,12 +29,14 @@ export async function submitPractice(input: SubmitInput): Promise<PracticeSessio
           transcript: input.content,
           topic: input.topicTitle,
           level: profile.level,
+          language: profile.language,
           metrics: input.metrics,
         })
       : await ai.reviewWriting({
           text: input.content,
           topic: input.topicTitle,
           level: profile.level,
+          language: profile.language,
         })
 
   const corrections: Correction[] = review.corrections.map((draft) => ({
@@ -45,6 +47,7 @@ export async function submitPractice(input: SubmitInput): Promise<PracticeSessio
 
   const session: PracticeSession = {
     id: sessionId,
+    language: profile.language,
     kind: input.kind,
     topicTitle: input.topicTitle,
     prompt: input.prompt,
@@ -70,6 +73,7 @@ export async function submitPractice(input: SubmitInput): Promise<PracticeSessio
       const drafts = await ai.generateLessons({
         corrections,
         level: profile.level,
+        language: profile.language,
         sourceText: input.content,
       })
       const lessons: Lesson[] = drafts.map((draft) => ({

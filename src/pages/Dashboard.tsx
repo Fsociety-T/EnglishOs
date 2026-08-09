@@ -1,44 +1,38 @@
 import { Link } from 'react-router-dom'
 import { BookMarked, Flame, GraduationCap, Mic, PenLine, Timer, Type } from 'lucide-react'
 import { Button, Card, ProgressRing, SectionHeading, StatTile } from '@/components/ui'
+import { useSessions, useVocabulary } from '@/hooks/useContent'
 import { useAsync } from '@/hooks/useAsync'
+import { useT } from '@/i18n'
+import type { StringKey } from '@/i18n/strings'
 import { computeStreak } from '@/lib/streak'
 import { formatRelative, localDay } from '@/lib/utils'
 import { useRepo } from '@/services/db'
 
-const QUICK_ACTIONS = [
-  {
-    to: '/write',
-    label: 'Write about a topic',
-    body: 'Pick a prompt and get every mistake explained.',
-    icon: PenLine,
-  },
-  {
-    to: '/speak',
-    label: 'Speak for two minutes',
-    body: 'Record yourself and get a fluency score.',
-    icon: Mic,
-  },
+const QUICK_ACTIONS: { to: string; labelKey: StringKey; bodyKey: StringKey; icon: typeof PenLine }[] = [
+  { to: '/write', labelKey: 'dash.actionWrite', bodyKey: 'dash.actionWriteBody', icon: PenLine },
+  { to: '/speak', labelKey: 'dash.actionSpeak', bodyKey: 'dash.actionSpeakBody', icon: Mic },
   {
     to: '/vocabulary',
-    label: 'Review your words',
-    body: 'Flashcards for the words that are due today.',
+    labelKey: 'dash.actionWords',
+    bodyKey: 'dash.actionWordsBody',
     icon: BookMarked,
   },
   {
     to: '/lessons',
-    label: 'Study a weak area',
-    body: 'Lessons built from the mistakes you actually make.',
+    labelKey: 'dash.actionLessons',
+    bodyKey: 'dash.actionLessonsBody',
     icon: GraduationCap,
   },
 ]
 
 export default function Dashboard() {
   const repo = useRepo()
+  const t = useT()
   const { data: stats } = useAsync(() => repo.listDailyStats(), [])
   const { data: profile } = useAsync(() => repo.getProfile(), [])
-  const { data: sessions } = useAsync(() => repo.listSessions(), [])
-  const { data: vocabulary } = useAsync(() => repo.listVocabulary(), [])
+  const { data: sessions } = useSessions()
+  const { data: vocabulary } = useVocabulary()
 
   const streak = computeStreak(stats ?? [])
   const today = (stats ?? []).find((s) => s.day === localDay())
@@ -57,18 +51,16 @@ export default function Dashboard() {
   )
 
   const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const greeting = t(hour < 12 ? 'dash.morning' : hour < 18 ? 'dash.afternoon' : 'dash.evening')
 
   return (
     <div className="space-y-8">
       <header>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          {greeting}, {profile?.displayName ?? 'Learner'}
+          {greeting}, {profile?.displayName ?? t('settings.namePlaceholder')}
         </h1>
         <p className="mt-1 text-sm text-fg-muted">
-          {streak.todayPending
-            ? 'You have not practised yet today. Ten minutes is enough to keep the streak alive.'
-            : 'You have already practised today. Anything more is a bonus.'}
+          {streak.todayPending ? t('dash.notYet') : t('dash.already')}
         </p>
       </header>
 
@@ -77,7 +69,7 @@ export default function Dashboard() {
         <ProgressRing
           value={goalPercent}
           label={`${minutesToday}`}
-          sublabel={`of ${goal} min`}
+          sublabel={t('dash.ofGoal', { goal })}
           size={132}
         />
         <div className="min-w-0 flex-1 text-center sm:text-left">
@@ -85,27 +77,27 @@ export default function Dashboard() {
             <Flame className={streak.current > 0 ? 'size-5 text-warn' : 'size-5 text-fg-faint'} />
             <span className="text-lg font-semibold">
               {streak.current === 0
-                ? 'No streak yet'
-                : `${streak.current}-day streak`}
+                ? t('dash.noStreak')
+                : t('dash.streak', { count: streak.current })}
             </span>
           </div>
           <p className="mt-2 text-sm leading-relaxed text-fg-muted">
             {goalPercent >= 100
-              ? 'Daily goal complete. Well done.'
-              : `${Math.max(0, goal - minutesToday)} more minutes to hit today's goal.`}
-            {streak.best > streak.current && ` Your best streak is ${streak.best} days.`}
+              ? t('dash.goalDone')
+              : t('dash.goalLeft', { count: Math.max(0, goal - minutesToday) })}
+            {streak.best > streak.current && t('dash.bestStreak', { count: streak.best })}
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
             <Link to="/write">
               <Button>
                 <PenLine className="size-4" />
-                Start writing
+                {t('dash.startWriting')}
               </Button>
             </Link>
             <Link to="/speak">
               <Button variant="outline">
                 <Mic className="size-4" />
-                Start speaking
+                {t('dash.startSpeaking')}
               </Button>
             </Link>
           </div>
@@ -115,25 +107,25 @@ export default function Dashboard() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
-          label="Words written"
+          label={t('dash.wordsWritten')}
           value={totalWords.toLocaleString()}
           icon={<Type className="size-4" />}
         />
         <StatTile
-          label="Speaking"
+          label={t('dash.speaking')}
           value={totalSpeakingMinutes}
           unit="min"
           tone="cyan"
           icon={<Mic className="size-4" />}
         />
         <StatTile
-          label="Words saved"
+          label={t('dash.wordsSaved')}
           value={(vocabulary ?? []).length}
           tone="good"
           icon={<BookMarked className="size-4" />}
         />
         <StatTile
-          label="Due to review"
+          label={t('dash.dueToReview')}
           value={dueCount}
           tone="warn"
           icon={<Timer className="size-4" />}
@@ -143,15 +135,16 @@ export default function Dashboard() {
       {/* Continue */}
       {lastSession && (
         <section>
-          <SectionHeading title="Pick up where you left off" />
+          <SectionHeading title={t('dash.continue')} />
           <Link to={`/session/${lastSession.id}`} className="block">
             <Card className="transition hover:bg-white/10">
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="truncate font-medium text-fg">{lastSession.topicTitle}</p>
                   <p className="mt-1 text-sm text-fg-faint">
-                    {lastSession.kind === 'writing' ? 'Writing' : 'Speaking'} &middot;{' '}
-                    {lastSession.wordCount} words &middot; {formatRelative(lastSession.createdAt)}
+                    {t(lastSession.kind === 'writing' ? 'dash.writing' : 'dash.speakingKind')}{' '}
+                    &middot; {lastSession.wordCount} {t('dash.words')} &middot;{' '}
+                    {formatRelative(lastSession.createdAt)}
                   </p>
                 </div>
                 <span className="shrink-0 text-2xl font-bold text-gradient">
@@ -165,16 +158,16 @@ export default function Dashboard() {
 
       {/* Quick actions */}
       <section>
-        <SectionHeading title="What do you want to do?" />
+        <SectionHeading title={t('dash.whatNext')} />
         <div className="grid gap-3 sm:grid-cols-2">
-          {QUICK_ACTIONS.map(({ to, label, body, icon: Icon }) => (
+          {QUICK_ACTIONS.map(({ to, labelKey, bodyKey, icon: Icon }) => (
             <Link key={to} to={to} className="block">
               <Card className="h-full transition hover:bg-white/10">
                 <span className="grid size-10 place-items-center rounded-xl bg-violet/10 text-violet-soft">
                   <Icon className="size-5" />
                 </span>
-                <p className="mt-3 font-medium text-fg">{label}</p>
-                <p className="mt-1 text-sm leading-relaxed text-fg-faint">{body}</p>
+                <p className="mt-3 font-medium text-fg">{t(labelKey)}</p>
+                <p className="mt-1 text-sm leading-relaxed text-fg-faint">{t(bodyKey)}</p>
               </Card>
             </Link>
           ))}

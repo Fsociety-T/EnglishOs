@@ -1,4 +1,11 @@
-import type { CefrLevel, Correction, FluencyMetrics, Lesson, Scores } from '@/types'
+import type {
+  CefrLevel,
+  Correction,
+  FluencyMetrics,
+  LearningLanguage,
+  Lesson,
+  Scores,
+} from '@/types'
 
 /** A correction before it has been attached to a stored session. */
 export type CorrectionDraft = Omit<Correction, 'id' | 'sessionId'>
@@ -29,12 +36,15 @@ export interface ReviewWritingInput {
   text: string
   topic: string
   level: CefrLevel
+  /** Which language to review against, and to write the feedback in. */
+  language: LearningLanguage
 }
 
 export interface ReviewSpeakingInput {
   transcript: string
   topic: string
   level: CefrLevel
+  language: LearningLanguage
   metrics: FluencyMetrics
 }
 
@@ -57,7 +67,12 @@ export interface AiProvider {
   generateLessons(input: {
     corrections: Correction[]
     level: CefrLevel
+    language: LearningLanguage
     sourceText?: string
   }): Promise<LessonDraft[]>
-  suggestVocabulary(input: { text: string; level: CefrLevel }): Promise<VocabSuggestion[]>
+  suggestVocabulary(input: {
+    text: string
+    level: CefrLevel
+    language: LearningLanguage
+  }): Promise<VocabSuggestion[]>
 }

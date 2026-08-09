@@ -1,5 +1,6 @@
 import type { SrsBox, VocabWord } from '@/types'
 import { SRS_INTERVAL_DAYS } from '@/types'
+import type { Translate } from '@/i18n'
 
 export type ReviewGrade = 'again' | 'good' | 'easy'
 
@@ -34,9 +35,9 @@ export function dueWords(words: VocabWord[]): VocabWord[] {
   return words.filter((w) => isDue(w)).sort((a, b) => a.srsBox - b.srsBox)
 }
 
-export function describeInterval(box: SrsBox): string {
+export function describeInterval(box: SrsBox, t: Translate): string {
   const days = SRS_INTERVAL_DAYS[box]
-  if (days === 1) return 'tomorrow'
-  if (days < 30) return `in ${days} days`
-  return `in ${Math.round(days / 30)} months`
+  if (days === 1) return t('srs.tomorrow')
+  if (days < 30) return t('srs.inDays', { count: days })
+  return t('srs.inMonths', { count: Math.round(days / 30) })
 }

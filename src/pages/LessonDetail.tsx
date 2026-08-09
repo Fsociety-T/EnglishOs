@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, RotateCcw, X } from 'lucide-react'
 import Prose from '@/components/Prose'
 import { Badge, Button, Card, SectionHeading, Spinner } from '@/components/ui'
+import { useLanguage, useT } from '@/i18n'
 import { useAsync } from '@/hooks/useAsync'
 import { ERROR_TONE } from '@/lib/errorStyles'
 import { cn } from '@/lib/utils'
@@ -16,6 +17,8 @@ export default function LessonDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const repo = useRepo()
+  const { language } = useLanguage()
+  const t = useT()
 
   const [quizStarted, setQuizStarted] = useState(false)
   const [questionIndex, setQuestionIndex] = useState(0)
@@ -27,15 +30,15 @@ export default function LessonDetail() {
     [id],
   )
 
-  if (loading) return <Spinner label="Loading lesson..." />
+  if (loading) return <Spinner label={t('lesson.loading')} />
 
   if (!lesson) {
     return (
       <Card>
-        <p className="text-fg-muted">That lesson could not be found.</p>
+        <p className="text-fg-muted">{t('lesson.notFound')}</p>
         <div className="mt-4">
           <Link to="/lessons">
-            <Button variant="outline">Back to lessons</Button>
+            <Button variant="outline">{t('lesson.backToLessons')}</Button>
           </Link>
         </div>
       </Card>
@@ -83,7 +86,7 @@ export default function LessonDetail() {
         className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition hover:text-fg"
       >
         <ArrowLeft className="size-4" />
-        Back
+        {t('common.back')}
       </button>
 
       <header>
@@ -94,12 +97,12 @@ export default function LessonDetail() {
               ERROR_TONE[lesson.errorType].chip,
             )}
           >
-            {ERROR_TYPE_LABEL[lesson.errorType]}
+            {ERROR_TYPE_LABEL[language][lesson.errorType]}
           </span>
           {lesson.status === 'mastered' && (
             <Badge tone="good">
               <CheckCircle2 className="size-3" />
-              Mastered
+              {t('lessons.mastered')}
             </Badge>
           )}
         </div>
@@ -109,7 +112,7 @@ export default function LessonDetail() {
       {lesson.sourceSentence && (
         <Card className="border-violet/30">
           <p className="text-xs font-medium tracking-wide text-fg-faint uppercase">
-            This came from your own writing
+            {t('lesson.fromYourWriting')}
           </p>
           <p className="mt-2 leading-relaxed text-fg italic">
             &ldquo;{lesson.sourceSentence}&rdquo;
@@ -122,7 +125,7 @@ export default function LessonDetail() {
       </Card>
 
       <section>
-        <SectionHeading title="Right and wrong, side by side" />
+        <SectionHeading title={t('lesson.sideBySide')} />
         <div className="space-y-3">
           {lesson.examples.map((example, i) => (
             <Card key={i} className="p-4">
@@ -145,18 +148,19 @@ export default function LessonDetail() {
       {/* Quiz */}
       <section>
         <SectionHeading
-          title="Check you have it"
-          subtitle={`${lesson.exercises.length} quick questions.`}
+          title={t('lesson.quizTitle')}
+          subtitle={t('lesson.quizSub', { count: lesson.exercises.length })}
         />
 
         {!quizStarted ? (
           <Card className="text-center">
             <p className="text-fg-muted">
-              Answer {Math.ceil(lesson.exercises.length * MASTERY_THRESHOLD)} or more correctly to
-              mark this lesson as mastered.
+              {t('lesson.masteryHint', {
+                count: Math.ceil(lesson.exercises.length * MASTERY_THRESHOLD),
+              })}
             </p>
             <div className="mt-4">
-              <Button onClick={restart}>Start the quiz</Button>
+              <Button onClick={restart}>{t('lesson.startQuiz')}</Button>
             </div>
           </Card>
         ) : finished ? (
@@ -165,17 +169,15 @@ export default function LessonDetail() {
               {correctCount}/{lesson.exercises.length}
             </p>
             <p className="mt-3 leading-relaxed text-fg-muted">
-              {ratio >= MASTERY_THRESHOLD
-                ? 'Strong. This lesson is marked as mastered - it will stop appearing in your weak areas.'
-                : 'Not quite yet. Read the examples again and retry - this stays in your learning list.'}
+              {ratio >= MASTERY_THRESHOLD ? t('lesson.passed') : t('lesson.failed')}
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-3">
               <Button onClick={restart} variant="outline">
                 <RotateCcw className="size-4" />
-                Try again
+                {t('lesson.tryAgain')}
               </Button>
               <Link to="/lessons">
-                <Button>Back to lessons</Button>
+                <Button>{t('lesson.backToLessons')}</Button>
               </Link>
             </div>
           </Card>
@@ -183,11 +185,12 @@ export default function LessonDetail() {
           <Card>
             <div className="flex items-center justify-between text-sm text-fg-faint">
               <span>
-                Question {questionIndex + 1} of {lesson.exercises.length}
+                {t('lesson.questionOf', {
+                  index: questionIndex + 1,
+                  total: lesson.exercises.length,
+                })}
               </span>
-              <span>
-                {correctCount} correct
-              </span>
+              <span>{t('lesson.correctCount', { count: correctCount })}</span>
             </div>
             <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
               <div
@@ -232,7 +235,9 @@ export default function LessonDetail() {
                 </p>
                 <div className="mt-4">
                   <Button onClick={next}>
-                    {questionIndex + 1 >= lesson.exercises.length ? 'See my result' : 'Next question'}
+                    {questionIndex + 1 >= lesson.exercises.length
+                      ? t('lesson.seeResult')
+                      : t('lesson.nextQuestion')}
                     <ArrowRight className="size-4" />
                   </Button>
                 </div>

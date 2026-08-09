@@ -10,8 +10,10 @@ import type {
   Profile,
   Scores,
   SrsBox,
+  LearningLanguage,
   VocabWord,
 } from '@/types'
+import { DEFAULT_PROFILE } from '@/types'
 import { requireSupabase } from './supabaseClient'
 import type { Repository } from './types'
 
@@ -37,6 +39,7 @@ function check<T>(result: { data: T; error: { message: string } | null }): T {
 
 interface SessionRow {
   id: string
+  language: LearningLanguage
   kind: 'writing' | 'speaking'
   topic_title: string
   prompt: string
@@ -56,6 +59,7 @@ interface SessionRow {
 function toSession(row: SessionRow): PracticeSession {
   return {
     id: row.id,
+    language: row.language ?? 'en',
     kind: row.kind,
     topicTitle: row.topic_title,
     prompt: row.prompt,
@@ -75,6 +79,7 @@ function toSession(row: SessionRow): PracticeSession {
 
 interface LessonRow {
   id: string
+  language: LearningLanguage
   error_type: Lesson['errorType']
   title: string
   body: string
@@ -89,6 +94,7 @@ interface LessonRow {
 function toLesson(row: LessonRow): Lesson {
   return {
     id: row.id,
+    language: row.language ?? 'en',
     errorType: row.error_type,
     title: row.title,
     body: row.body,
@@ -103,6 +109,7 @@ function toLesson(row: LessonRow): Lesson {
 
 interface VocabRow {
   id: string
+  language: LearningLanguage
   word: string
   phonetic: string | null
   part_of_speech: string | null
@@ -119,6 +126,7 @@ interface VocabRow {
 function toWord(row: VocabRow): VocabWord {
   return {
     id: row.id,
+    language: row.language ?? 'en',
     word: row.word,
     phonetic: row.phonetic ?? undefined,
     partOfSpeech: row.part_of_speech ?? undefined,
@@ -172,14 +180,15 @@ export const supabaseRepo: Repository = {
     const uid = await userId()
     const { data, error } = await sb
       .from('profiles')
-      .select('display_name, level, daily_goal_minutes')
+      .select('display_name, language, level, daily_goal_minutes')
       .eq('id', uid)
       .maybeSingle()
     if (error) throw new Error(error.message)
     // The signup trigger normally creates this; fall back rather than crash.
-    if (!data) return { displayName: 'Learner', level: 'B1', dailyGoalMinutes: 20 }
+    if (!data) return { ...DEFAULT_PROFILE }
     return {
       displayName: data.display_name,
+      language: data.language ?? DEFAULT_PROFILE.language,
       level: data.level,
       dailyGoalMinutes: data.daily_goal_minutes,
     }
@@ -191,6 +200,7 @@ export const supabaseRepo: Repository = {
     const { error } = await sb.from('profiles').upsert({
       id: uid,
       display_name: profile.displayName,
+      language: profile.language,
       level: profile.level,
       daily_goal_minutes: profile.dailyGoalMinutes,
     })
@@ -218,6 +228,7 @@ export const supabaseRepo: Repository = {
     const { error } = await sb.from('sessions').insert({
       id: session.id,
       user_id: uid,
+      language: session.language,
       kind: session.kind,
       topic_title: session.topicTitle,
       prompt: session.prompt,
@@ -285,6 +296,7 @@ export const supabaseRepo: Repository = {
         toInsert.push({
           id: lesson.id,
           user_id: uid,
+          language: lesson.language,
           error_type: lesson.errorType,
           title: lesson.title,
           body: lesson.body,
@@ -325,6 +337,7 @@ export const supabaseRepo: Repository = {
       {
         id: word.id,
         user_id: uid,
+        language: word.language,
         word: word.word,
         phonetic: word.phonetic ?? null,
         part_of_speech: word.partOfSpeech ?? null,
@@ -337,9 +350,10 @@ export const supabaseRepo: Repository = {
         next_review_at: word.nextReviewAt,
         created_at: word.createdAt,
       },
-      // The (user_id, word) unique index turns a re-save into a no-op rather
-      // than an error the caller has to handle.
-      { onConflict: 'user_id,word', ignoreDuplicates: true },
+      // The (user_id, language, word) unique index turns a re-save into a
+      // no-op rather than an error the caller has to handle. Language is part
+      // of the key so the same spelling can exist in both notebooks.
+      { onConflict: 'user_id,language,word', ignoreDuplicates: true },
     )
     if (error) throw new Error(error.message)
     return word

@@ -1,4 +1,4 @@
-import type { ErrorType } from '@/types'
+import type { ErrorType, LearningLanguage } from '@/types'
 
 export interface LessonTemplate {
   title: string
@@ -12,7 +12,7 @@ export interface LessonTemplate {
  * matches the learner's most frequent mistake and attaches the sentence they
  * actually wrote, so the lesson is never generic filler.
  */
-export const LESSON_LIBRARY: Record<ErrorType, LessonTemplate> = {
+const EN_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
   'verb-tense': {
     title: 'Choosing the right verb tense',
     body: 'English marks time on the verb, and each tense has one job.\n\n**Present simple** is for habits and facts: *I work every day.*\n**Past simple** is for finished actions with a finished time: *I worked yesterday.*\n**Present perfect** connects the past to now: *I have worked here for three years.*\n\nThe trap that catches most learners: after **did**, **didn\'t** or a modal like **can**, the verb goes back to its base form. The time is already marked once, so it is not marked twice.',
@@ -199,4 +199,234 @@ export const LESSON_LIBRARY: Record<ErrorType, LessonTemplate> = {
       { question: 'Which is clearest?', choices: ['At this point in time', 'Now', 'In the current moment of time', 'At the present time period'], answerIndex: 1, explanation: 'One clear word beats four vague ones.' },
     ],
   },
+}
+
+/**
+ * The French lessons are written for French, not translated from the English
+ * ones. Two of them have no English counterpart at all - gender agreement and
+ * accents are the mistakes that actually dominate French writing, and neither
+ * exists as a category in English.
+ */
+const FR_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
+  'gender-agreement': {
+    title: 'L’accord en genre et en nombre',
+    body: 'En français, l’adjectif s’accorde avec le nom : il change de forme selon que le nom est masculin ou féminin, singulier ou pluriel.\n\n**Règle de base** : féminin → on ajoute **-e**, pluriel → on ajoute **-s**.\n*un petit chat → une petite chatte → des petits chats → des petites chattes*\n\nLe participe passé avec **être** s’accorde aussi avec le sujet : *elle est partie*, *ils sont partis*.\n\nAvec **avoir**, il ne s’accorde pas avec le sujet — sauf si le complément d’objet direct est placé **avant** le verbe : *la lettre que j’ai écrite*.',
+    examples: [
+      { wrong: 'une maison blanc', right: 'une maison blanche', note: '« Maison » est féminin, donc l’adjectif prend la forme féminine.' },
+      { wrong: 'Elle est allé au marché.', right: 'Elle est allée au marché.', note: 'Avec « être », le participe s’accorde avec le sujet.' },
+      { wrong: 'Les livres sont intéressant.', right: 'Les livres sont intéressants.', note: 'Sujet pluriel, adjectif pluriel.' },
+    ],
+    exercises: [
+      { question: 'C’est une ___ idée.', choices: ['bon', 'bonne', 'bons', 'bonnes'], answerIndex: 1, explanation: '« Idée » est féminin singulier : bonne.' },
+      { question: 'Elles sont ___ hier.', choices: ['arrivé', 'arrivés', 'arrivée', 'arrivées'], answerIndex: 3, explanation: 'Avec « être », accord avec le sujet féminin pluriel.' },
+      { question: 'Des voitures ___.', choices: ['neuf', 'neufs', 'neuve', 'neuves'], answerIndex: 3, explanation: '« Voitures » est féminin pluriel : neuves.' },
+      { question: 'Il a acheté une table ___.', choices: ['rond', 'ronde', 'ronds', 'rondes'], answerIndex: 1, explanation: '« Table » est féminin singulier : ronde.' },
+      { question: 'La lettre que j’ai ___.', choices: ['écrit', 'écrite', 'écrits', 'écrites'], answerIndex: 1, explanation: 'Le COD « la lettre » est avant le verbe, donc accord au féminin singulier.' },
+    ],
+  },
+
+  accent: {
+    title: 'Les accents qui changent le sens',
+    body: 'En français, un accent n’est pas une décoration : il change la prononciation et parfois le mot entier.\n\n**a / à** — *a* est le verbe avoir, *à* est une préposition : *Il **a** faim. Il va **à** Paris.*\n**ou / où** — *ou* propose un choix, *où* indique un lieu : *Café **ou** thé ? **Où** es-tu ?*\n**la / là** — *la* est un article, *là* indique un endroit.\n\nL’accent aigu **é** se prononce fermé (*été*), l’accent grave **è** se prononce ouvert (*mère*). La terminaison **-er** de l’infinitif se prononce comme *-é*, ce qui explique la confusion entre *manger* et *mangé*.',
+    examples: [
+      { wrong: 'Il va a la maison.', right: 'Il va à la maison.', note: '« à » préposition prend un accent grave.' },
+      { wrong: 'Ou est mon téléphone ?', right: 'Où est mon téléphone ?', note: '« où » de lieu prend un accent grave.' },
+      { wrong: 'J’ai manger une pomme.', right: 'J’ai mangé une pomme.', note: 'Après « ai », c’est le participe passé en -é, pas l’infinitif.' },
+    ],
+    exercises: [
+      { question: 'Il ___ trois frères.', choices: ['à', 'a', 'as', 'ah'], answerIndex: 1, explanation: '« a » est le verbe avoir, sans accent.' },
+      { question: '___ habites-tu ?', choices: ['Ou', 'Où', 'Oû', 'Ouh'], answerIndex: 1, explanation: '« Où » de lieu prend l’accent grave.' },
+      { question: 'Je vais ___ l’école.', choices: ['a', 'à', 'as', 'ah'], answerIndex: 1, explanation: 'Préposition de lieu : à.' },
+      { question: 'Nous avons ___ le film.', choices: ['regarder', 'regardé', 'regardez', 'regardais'], answerIndex: 1, explanation: 'Après l’auxiliaire, participe passé : regardé.' },
+      { question: 'Elle veut ___ ce soir.', choices: ['sortie', 'sorti', 'sortir', 'sortez'], answerIndex: 2, explanation: 'Après « veut », on met l’infinitif : sortir.' },
+    ],
+  },
+
+  'verb-tense': {
+    title: 'Choisir le bon temps du verbe',
+    body: 'Le français distingue nettement deux passés, et c’est là que se joue la plupart des erreurs.\n\n**Passé composé** : une action terminée, un événement précis. *Hier, j’**ai mangé** au restaurant.*\n**Imparfait** : une description, une habitude, un décor. *Quand j’**étais** petit, je **mangeais** chez ma grand-mère.*\n\nUn bon test : si on peut dire « et puis », c’est le passé composé. Si on décrit comment c’était, c’est l’imparfait.\n\nLe **futur proche** (*je vais partir*) est plus courant à l’oral que le futur simple (*je partirai*).',
+    examples: [
+      { wrong: 'Hier je mangeais au restaurant à midi.', right: 'Hier j’ai mangé au restaurant à midi.', note: 'Un moment précis et terminé : passé composé.' },
+      { wrong: 'Quand j’ai été petit, j’ai joué au foot.', right: 'Quand j’étais petit, je jouais au foot.', note: 'Une habitude dans le passé : imparfait.' },
+      { wrong: 'Je suis allé à Paris depuis trois ans.', right: 'Je vis à Paris depuis trois ans.', note: '« Depuis » + situation encore vraie : présent.' },
+    ],
+    exercises: [
+      { question: 'Hier, il ___ son ami.', choices: ['voyait', 'a vu', 'voit', 'verra'], answerIndex: 1, explanation: 'Action ponctuelle et terminée : passé composé.' },
+      { question: 'Chaque été, nous ___ à la mer.', choices: ['sommes allés', 'allions', 'irons', 'allons'], answerIndex: 1, explanation: 'Habitude passée : imparfait.' },
+      { question: 'Il ___ ici depuis 2019.', choices: ['a travaillé', 'travaillait', 'travaille', 'travaillera'], answerIndex: 2, explanation: '« Depuis » + action qui continue : présent.' },
+      { question: 'Demain, je ___ mes amis.', choices: ['ai vu', 'voyais', 'vais voir', 'voyais'], answerIndex: 2, explanation: 'Futur proche pour un projet certain.' },
+      { question: 'Il faisait beau et soudain il ___.', choices: ['pleuvait', 'a plu', 'pleut', 'pleuvra'], answerIndex: 1, explanation: '« Soudain » marque une rupture : passé composé.' },
+    ],
+  },
+
+  article: {
+    title: 'Les articles : le, la, les, un, une, du',
+    body: 'Le français met un article presque partout où l’anglais le supprime.\n\n**Défini** (le, la, les) : une chose connue, ou une généralité. *J’aime **le** café.*\n**Indéfini** (un, une, des) : une chose parmi d’autres. *J’ai bu **un** café.*\n**Partitif** (du, de la, des) : une quantité non comptée. *Je bois **du** café.*\n\nAprès une négation, l’article indéfini et le partitif deviennent **de** : *Je n’ai pas **de** café.*\n\nEt les articles se contractent : *à + le = **au***, *de + le = **du***.',
+    examples: [
+      { wrong: 'J’aime café.', right: 'J’aime le café.', note: 'Une généralité prend l’article défini.' },
+      { wrong: 'Je n’ai pas du pain.', right: 'Je n’ai pas de pain.', note: 'Après la négation, le partitif devient « de ».' },
+      { wrong: 'Je vais à le cinéma.', right: 'Je vais au cinéma.', note: 'à + le se contracte en « au ».' },
+    ],
+    exercises: [
+      { question: 'Je voudrais ___ eau, s’il vous plaît.', choices: ['de', 'de l’', 'le', 'un'], answerIndex: 1, explanation: 'Quantité non comptée devant une voyelle : de l’.' },
+      { question: 'Il joue ___ piano.', choices: ['de le', 'du', 'le', 'à le'], answerIndex: 1, explanation: 'jouer de + le = du.' },
+      { question: 'Elle n’a pas ___ frères.', choices: ['des', 'de', 'les', 'du'], answerIndex: 1, explanation: 'Après la négation : de.' },
+      { question: 'Nous allons ___ plage.', choices: ['à le', 'au', 'à la', 'du'], answerIndex: 2, explanation: '« Plage » est féminin : à la.' },
+      { question: '___ enfants jouent dehors.', choices: ['Le', 'La', 'Les', 'Un'], answerIndex: 2, explanation: 'Pluriel défini : les.' },
+    ],
+  },
+
+  'subject-verb-agreement': {
+    title: 'Conjuguer le verbe avec son sujet',
+    body: 'Chaque personne a sa terminaison, et beaucoup se prononcent pareil sans s’écrire pareil : *je parl**e***, *tu parl**es***, *il parl**e***, *ils parl**ent*** se disent tous de la même façon.\n\nC’est pour cela que l’erreur passe inaperçue à l’oral et saute aux yeux à l’écrit.\n\n**Verbes en -er** : -e, -es, -e, -ons, -ez, -ent.\n**être** : suis, es, est, sommes, êtes, sont.\n**avoir** : ai, as, a, avons, avez, ont.\n**aller** : vais, vas, va, allons, allez, vont.\n\nQuand le sujet est éloigné du verbe, revenez au sujet réel : *Les enfants de mon voisin **jouent*** — le sujet est *les enfants*, pas *mon voisin*.',
+    examples: [
+      { wrong: 'Ils mange à midi.', right: 'Ils mangent à midi.', note: '3e personne du pluriel : -ent.' },
+      { wrong: 'Tu es allé ? Non, je suis pas allé.', right: 'Tu es allé ? Non, je ne suis pas allé.', note: 'La négation garde « ne » à l’écrit.' },
+      { wrong: 'Nous avons mangez.', right: 'Nous avons mangé.', note: '« -ez » est la terminaison de « vous », pas du participe.' },
+    ],
+    exercises: [
+      { question: 'Nous ___ au cinéma.', choices: ['allons', 'allez', 'vont', 'va'], answerIndex: 0, explanation: 'nous → allons.' },
+      { question: 'Elles ___ contentes.', choices: ['est', 'es', 'sont', 'sommes'], answerIndex: 2, explanation: 'elles → sont.' },
+      { question: 'Tu ___ raison.', choices: ['a', 'as', 'ai', 'ont'], answerIndex: 1, explanation: 'tu → as.' },
+      { question: 'Mon frère et moi ___ partis.', choices: ['sommes', 'sont', 'est', 'êtes'], answerIndex: 0, explanation: '« mon frère et moi » = nous → sommes.' },
+      { question: 'Les élèves de la classe ___ attentifs.', choices: ['est', 'sont', 'es', 'sommes'], answerIndex: 1, explanation: 'Le sujet est « les élèves » : sont.' },
+    ],
+  },
+
+  preposition: {
+    title: 'Les prépositions de lieu et de temps',
+    body: 'Les prépositions ne se traduisent presque jamais mot à mot. Elles s’apprennent par blocs.\n\n**Pays** : *en* France (féminin), *au* Japon (masculin), *aux* États-Unis (pluriel).\n**Villes** : *à* Paris.\n**Temps** : *depuis* (encore vrai), *pendant* (durée finie), *il y a* (moment passé).\n*Je vis ici **depuis** 2020. J’ai vécu à Lyon **pendant** deux ans. Je suis arrivé **il y a** un mois.*\n\nEt certains verbes imposent leur préposition : *penser **à***, *parler **de***, *commencer **à***, *essayer **de***.',
+    examples: [
+      { wrong: 'Je vais à France.', right: 'Je vais en France.', note: 'Pays féminin : en.' },
+      { wrong: 'J’habite ici depuis deux ans en arrière.', right: 'J’habite ici depuis deux ans.', note: '« depuis » suffit.' },
+      { wrong: 'Je pense de toi.', right: 'Je pense à toi.', note: 'Le verbe « penser » prend « à » pour une personne.' },
+    ],
+    exercises: [
+      { question: 'Il travaille ___ Japon.', choices: ['en', 'à', 'au', 'dans'], answerIndex: 2, explanation: 'Pays masculin : au.' },
+      { question: 'Nous habitons ___ Lyon.', choices: ['en', 'à', 'au', 'dans le'], answerIndex: 1, explanation: 'Ville : à.' },
+      { question: 'Je l’ai vu ___ trois jours.', choices: ['depuis', 'pendant', 'il y a', 'dans'], answerIndex: 2, explanation: 'Un moment passé précis : il y a.' },
+      { question: 'Elle rêve ___ voyager.', choices: ['à', 'de', 'en', 'pour'], answerIndex: 1, explanation: 'rêver de + infinitif.' },
+      { question: 'Il a plu ___ toute la nuit.', choices: ['depuis', 'pendant', 'il y a', 'dès'], answerIndex: 1, explanation: 'Durée terminée : pendant.' },
+    ],
+  },
+
+  'word-order': {
+    title: 'L’ordre des mots en français',
+    body: 'L’ordre de base est **Sujet → Verbe → Complément**, comme en anglais. Trois choses le distinguent.\n\n**L’adjectif se place après le nom** dans la plupart des cas : *une voiture rouge*, pas *une rouge voiture*. Quelques adjectifs courts et courants passent devant : *un **grand** homme*, *une **belle** journée*, *un **petit** problème*.\n\n**Le pronom complément passe avant le verbe** : *Je **le** vois*, pas *Je vois le*.\n\n**La négation encadre le verbe** : *Je **ne** mange **pas***. Aux temps composés, elle encadre l’auxiliaire : *Je **n’**ai **pas** mangé*.',
+    examples: [
+      { wrong: 'une rouge voiture', right: 'une voiture rouge', note: 'La couleur se place après le nom.' },
+      { wrong: 'Je vois le souvent.', right: 'Je le vois souvent.', note: 'Le pronom passe avant le verbe.' },
+      { wrong: 'Je ai pas mangé.', right: 'Je n’ai pas mangé.', note: 'La négation encadre l’auxiliaire.' },
+    ],
+    exercises: [
+      { question: 'Quelle phrase est correcte ?', choices: ['C’est une intéressante histoire.', 'C’est une histoire intéressante.', 'C’est intéressante une histoire.', 'C’est une histoire intéressant.'], answerIndex: 1, explanation: 'L’adjectif long se place après le nom.' },
+      { question: 'Quelle phrase est correcte ?', choices: ['Je connais la.', 'Je la connais.', 'Je connais elle.', 'La je connais.'], answerIndex: 1, explanation: 'Le pronom complément précède le verbe.' },
+      { question: 'Quelle phrase est correcte ?', choices: ['Il ne pas vient.', 'Il vient pas ne.', 'Il ne vient pas.', 'Il pas ne vient.'], answerIndex: 2, explanation: 'ne + verbe + pas.' },
+      { question: 'Quelle phrase est correcte ?', choices: ['un homme grand et gentil', 'un grand et gentil homme', 'un grand homme gentil', 'Les trois se disent selon le sens.'], answerIndex: 3, explanation: '« Grand » change de sens selon sa place ; les formes existent toutes.' },
+      { question: 'Quelle phrase est correcte ?', choices: ['Je n’ai pas le vu.', 'Je ne l’ai pas vu.', 'Je ne l’ai vu pas.', 'Je l’ai ne pas vu.'], answerIndex: 1, explanation: 'Pronom avant l’auxiliaire, négation autour de l’auxiliaire.' },
+    ],
+  },
+
+  plural: {
+    title: 'Former le pluriel',
+    body: 'Le pluriel régulier ajoute un **-s** qui ne se prononce pas : *un livre → des livres*.\n\nLes exceptions se rangent par terminaison :\n**-al → -aux** : *un journal → des journaux*, *un cheval → des chevaux*.\n**-eau, -au, -eu → -x** : *un bateau → des bateaux*, *un jeu → des jeux*.\n**-s, -x, -z** : ne changent pas : *un pays → des pays*.\n\nComme le *-s* est muet, c’est l’article qui s’entend : *le livre* / *les livres*. À l’écrit, il faut accorder tout ce qui suit.',
+    examples: [
+      { wrong: 'des journals', right: 'des journaux', note: '-al devient -aux.' },
+      { wrong: 'des bateaus', right: 'des bateaux', note: '-eau prend un -x.' },
+      { wrong: 'des pays différent', right: 'des pays différents', note: 'L’adjectif s’accorde même si le nom ne change pas.' },
+    ],
+    exercises: [
+      { question: 'Le pluriel de « animal » est :', choices: ['animals', 'animaux', 'animales', 'animaus'], answerIndex: 1, explanation: '-al → -aux.' },
+      { question: 'Le pluriel de « gâteau » est :', choices: ['gâteaus', 'gâteaux', 'gâteauz', 'gâteaues'], answerIndex: 1, explanation: '-eau → -eaux.' },
+      { question: 'Le pluriel de « prix » est :', choices: ['prixs', 'prixes', 'prix', 'pris'], answerIndex: 2, explanation: 'Les mots en -x ne changent pas.' },
+      { question: 'Le pluriel de « travail » est :', choices: ['travails', 'travaux', 'travailles', 'travaus'], answerIndex: 1, explanation: 'Pluriel irrégulier : travaux.' },
+      { question: 'Le pluriel de « œil » est :', choices: ['œils', 'yeux', 'œilles', 'oeuils'], answerIndex: 1, explanation: 'Pluriel totalement irrégulier : yeux.' },
+    ],
+  },
+
+  spelling: {
+    title: 'Les pièges d’orthographe courants',
+    body: 'Certaines confusions reviennent dans presque tous les textes.\n\n**ce / se** — *ce* montre (*ce livre*), *se* est réfléchi (*il se lave*).\n**ces / ses** — *ces* montre plusieurs choses, *ses* indique la possession.\n**c’est / s’est** — *c’est* = cela est, *s’est* accompagne un verbe pronominal.\n**leur / leurs** — devant un verbe, *leur* ne prend jamais de -s.\n\nEt les doubles consonnes s’apprennent mot par mot : *apparaître*, *développer*, *professionnel*.',
+    examples: [
+      { wrong: 'Il ce lave les mains.', right: 'Il se lave les mains.', note: '« se » est le pronom réfléchi.' },
+      { wrong: 'C’est ces affaires.', right: 'Ce sont ses affaires.', note: 'Possession : ses.' },
+      { wrong: 'Je leurs ai parlé.', right: 'Je leur ai parlé.', note: '« leur » pronom ne prend pas de -s.' },
+    ],
+    exercises: [
+      { question: '___ livre est à moi.', choices: ['Se', 'Ce', 'Ces', 'Ses'], answerIndex: 1, explanation: 'Déterminant démonstratif singulier : ce.' },
+      { question: 'Elle ___ souvenue de tout.', choices: ['c’est', 's’est', 'ses', 'ces'], answerIndex: 1, explanation: 'Verbe pronominal : s’est souvenue.' },
+      { question: 'Il a perdu ___ clés.', choices: ['ces', 'ses', 'c’est', 's’est'], answerIndex: 1, explanation: 'Les clés lui appartiennent : ses.' },
+      { question: 'Je ___ ai donné mon numéro.', choices: ['leurs', 'leur', 'leures', 'l’heure'], answerIndex: 1, explanation: 'Pronom devant le verbe : leur, invariable.' },
+      { question: 'Quelle orthographe est correcte ?', choices: ['developper', 'dévelloper', 'développer', 'déveloper'], answerIndex: 2, explanation: 'Deux « p » : développer.' },
+    ],
+  },
+
+  punctuation: {
+    title: 'La ponctuation française',
+    body: 'La règle qui surprend le plus : en français, les signes **doubles** prennent une **espace avant** — `; : ! ?` et les guillemets.\n\n*Comment ça va ?* — avec une espace avant le point d’interrogation.\n*Il a dit : « bonjour ».* — avec les guillemets français « » et une espace à l’intérieur.\n\nLes signes **simples** (`. ,`) ne prennent rien avant, une espace après.\n\nLa virgule ne peut pas relier deux phrases complètes toute seule : il faut un point, un point-virgule, ou un mot comme *et*, *mais*, *donc*.',
+    examples: [
+      { wrong: 'Comment ça va?', right: 'Comment ça va ?', note: 'Espace avant le point d’interrogation.' },
+      { wrong: 'Il a dit "bonjour".', right: 'Il a dit « bonjour ».', note: 'Guillemets français avec espaces intérieures.' },
+      { wrong: 'Il pleuvait, nous sommes restés.', right: 'Il pleuvait, donc nous sommes restés.', note: 'Une virgule seule ne relie pas deux phrases.' },
+    ],
+    exercises: [
+      { question: 'Quelle phrase est correcte ?', choices: ['Tu viens?', 'Tu viens ?', 'Tu viens ?.', 'Tu viens.?'], answerIndex: 1, explanation: 'Espace insécable avant le « ? ».' },
+      { question: 'Quelle phrase est correcte ?', choices: ['Voici la liste: pain, lait.', 'Voici la liste : pain, lait.', 'Voici la liste :pain, lait.', 'Voici la liste;pain, lait.'], answerIndex: 1, explanation: 'Espace avant et après les deux-points.' },
+      { question: 'Quels guillemets sont français ?', choices: ['"mot"', '« mot »', '“mot”', '\'mot\''], answerIndex: 1, explanation: 'Le français utilise les chevrons « ».' },
+      { question: 'Quelle phrase relie correctement ?', choices: ['J’étais fatigué, je suis parti.', 'J’étais fatigué je suis parti.', 'J’étais fatigué, donc je suis parti.', 'J’étais fatigué donc, je suis parti.'], answerIndex: 2, explanation: 'Un mot de liaison relie les deux propositions.' },
+      { question: 'Où met-on la majuscule ?', choices: ['les français parlent vite', 'Les Français parlent vite', 'Les français parlent vite', 'les Français parlent Vite'], answerIndex: 1, explanation: 'Le nom d’habitants prend une majuscule ; début de phrase aussi.' },
+    ],
+  },
+
+  'word-choice': {
+    title: 'Choisir le mot juste',
+    body: 'Quelques paires trompent presque tout le monde.\n\n**savoir / connaître** — *savoir* une information ou faire quelque chose, *connaître* une personne ou un lieu. *Je **sais** nager. Je **connais** Paris.*\n**an / année** — *an* compte, *année* décrit la durée. *J’ai vingt **ans**. Une bonne **année**.*\n**bon / bien** — *bon* est un adjectif, *bien* un adverbe. *Un **bon** repas. Il travaille **bien**.*\n**apporter / amener** — on *apporte* une chose, on *amène* une personne.\n\nEt les faux amis de l’anglais : *actuellement* = en ce moment (pas « actually »), *librairie* = bookshop (pas library).',
+    examples: [
+      { wrong: 'Je connais nager.', right: 'Je sais nager.', note: 'Une capacité : savoir.' },
+      { wrong: 'Il parle très bon français.', right: 'Il parle très bien français.', note: 'Adverbe après le verbe : bien.' },
+      { wrong: 'J’ai vingt années.', right: 'J’ai vingt ans.', note: 'On compte les ans.' },
+    ],
+    exercises: [
+      { question: 'Je ___ cette chanson par cœur.', choices: ['connais', 'sais', 'sait', 'connaît'], answerIndex: 0, explanation: 'On connaît une chanson ; on sait la chanter.' },
+      { question: 'Elle chante très ___.', choices: ['bon', 'bonne', 'bien', 'meilleur'], answerIndex: 2, explanation: 'Adverbe : bien.' },
+      { question: 'Il a passé trois ___ à Berlin.', choices: ['ans', 'années', 'annuels', 'an'], answerIndex: 0, explanation: 'Un nombre précis : ans.' },
+      { question: 'Peux-tu ___ ton frère à la fête ?', choices: ['apporter', 'amener', 'emporter', 'porter'], answerIndex: 1, explanation: 'On amène une personne.' },
+      { question: '« Actuellement » veut dire :', choices: ['en réalité', 'en ce moment', 'peut-être', 'autrefois'], answerIndex: 1, explanation: 'Faux ami : actuellement = en ce moment.' },
+    ],
+  },
+
+  other: {
+    title: 'Rendre la phrase plus naturelle',
+    body: 'Votre phrase était compréhensible, mais un petit changement la rend plus naturelle.\n\nCe qui fait le plus progresser n’est pas plus de grammaire : ce sont des **phrases plus courtes**, des **verbes plus précis**, et **moins de mots vides**.\n\nComparez : *J’ai pris la décision de faire une amélioration de mon français* → *J’ai décidé d’améliorer mon français.* Même sens, moitié moins de mots.\n\nÀ l’écrit, préférez aussi la forme active : *Le rapport **a été écrit** par Marie* → *Marie **a écrit** le rapport.*',
+    examples: [
+      { wrong: 'J’ai pris la décision de partir.', right: 'J’ai décidé de partir.', note: 'Un verbe précis vaut mieux que verbe + nom.' },
+      { wrong: 'En raison du fait qu’il pleuvait...', right: 'Parce qu’il pleuvait...' },
+      { wrong: 'À mon avis, je pense que...', right: 'Je pense que...', note: 'Ne le dites qu’une fois.' },
+    ],
+    exercises: [
+      { question: 'Quelle phrase est la plus naturelle ?', choices: ['J’ai fait une décision.', 'J’ai pris une décision.', 'J’ai décidé.', 'J’ai donné une décision.'], answerIndex: 2, explanation: 'Le verbe seul est le plus direct.' },
+      { question: 'Quelle formule est la plus concise ?', choices: ['En raison du fait que', 'Parce que', 'Du fait de la raison que', 'Compte tenu du fait que'], answerIndex: 1, explanation: '« Parce que » suffit.' },
+      { question: 'Quelle phrase est la plus claire ?', choices: ['À mon avis je pense que c’est bien.', 'Je pense que c’est bien.', 'Mon avis je pense bien.', 'Selon mon avis personnel je pense.'], answerIndex: 1, explanation: 'Ne répétez pas la même idée.' },
+      { question: 'Quelle phrase est la plus directe ?', choices: ['Le repas a été préparé par Paul.', 'Paul a préparé le repas.', 'Il a été fait une préparation du repas.', 'Le repas, il a été préparé.'], answerIndex: 1, explanation: 'La voix active est plus directe.' },
+      { question: 'Quelle expression est la plus claire ?', choices: ['À l’heure actuelle', 'Maintenant', 'Dans le moment présent', 'Au moment où nous sommes'], answerIndex: 1, explanation: 'Un mot clair vaut mieux que quatre mots vagues.' },
+    ],
+  },
+}
+
+const LESSONS_BY_LANGUAGE: Record<LearningLanguage, Partial<Record<ErrorType, LessonTemplate>>> = {
+  en: EN_LESSONS,
+  fr: FR_LESSONS,
+}
+
+/**
+ * The teaching template for a mistake. Falls back to the language's "other"
+ * lesson, which is always present, so a correction tagged with a type that
+ * language has no lesson for still produces something useful.
+ */
+export function lessonTemplate(
+  language: LearningLanguage,
+  errorType: ErrorType,
+): LessonTemplate {
+  const library = LESSONS_BY_LANGUAGE[language]
+  return library[errorType] ?? library.other ?? EN_LESSONS.other!
 }

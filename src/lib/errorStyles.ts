@@ -1,4 +1,4 @@
-import type { ErrorType, Severity } from '@/types'
+import type { ErrorType, LearningLanguage, Severity } from '@/types'
 
 /**
  * Full class strings, never built by string concatenation, because Tailwind
@@ -44,19 +44,29 @@ export const ERROR_TONE: Record<ErrorType, ErrorTone> = {
   'subject-verb-agreement': TONES.bad,
   article: TONES.violet,
   plural: TONES.violet,
+  // Gender agreement sits with the other agreement mistakes it resembles.
+  'gender-agreement': TONES.violet,
   preposition: TONES.cyan,
   collocation: TONES.cyan,
   'word-order': TONES.info,
   'word-choice': TONES.info,
   spelling: TONES.warn,
+  accent: TONES.warn,
   punctuation: TONES.warn,
   other: TONES.info,
 }
 
-export const SEVERITY_LABEL: Record<Severity, string> = {
-  minor: 'Small',
-  moderate: 'Worth fixing',
-  major: 'Important',
+export const SEVERITY_LABEL: Record<LearningLanguage, Record<Severity, string>> = {
+  en: {
+    minor: 'Small',
+    moderate: 'Worth fixing',
+    major: 'Important',
+  },
+  fr: {
+    minor: 'Mineur',
+    moderate: 'À corriger',
+    major: 'Important',
+  },
 }
 
 export function scoreTone(score: number): 'good' | 'warn' | 'bad' {

@@ -53,17 +53,29 @@ export const claudeProvider: AiProvider = {
 
   async generateLessons(input): Promise<LessonDraft[]> {
     const lessons = await invoke<
-      Array<Omit<LessonDraft, 'exercises'> & { exercises: Array<Omit<LessonDraft['exercises'][number], 'id'>> }>
+      Array<
+        Omit<LessonDraft, 'exercises' | 'language'> & {
+          exercises: Array<Omit<LessonDraft['exercises'][number], 'id'>>
+        }
+      >
     >('generate-lessons', input)
 
     // Exercise IDs only identify UI choices and are not meaningful to the model.
+    // The language is stamped here rather than trusted from the response: it is
+    // already known, and a wrong value would file the lesson under the wrong
+    // language for good.
     return lessons.map((lesson) => ({
       ...lesson,
+      language: input.language,
       exercises: lesson.exercises.map((exercise) => ({ ...exercise, id: newId() })),
     }))
   },
 
-  suggestVocabulary(input: { text: string; level: ReviewWritingInput['level'] }): Promise<VocabSuggestion[]> {
+  suggestVocabulary(input: {
+    text: string
+    level: ReviewWritingInput['level']
+    language: ReviewWritingInput['language']
+  }): Promise<VocabSuggestion[]> {
     return invoke<VocabSuggestion[]>('suggest-vocabulary', input)
   },
 }

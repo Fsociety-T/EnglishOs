@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2, PenLine, Shuffle, Sparkles } from 'lucide-react'
 import { Badge, Button, Card, SectionHeading, Tabs } from '@/components/ui'
-import { TOPICS, TOPIC_CATEGORIES, randomTopic } from '@/data/topics'
+import { randomTopic, topicCategoriesFor, topicsFor } from '@/data/topics'
 import { countWords } from '@/lib/text'
+import { useLanguage, useT } from '@/i18n'
 import { submitPractice } from '@/lib/session'
 import { formatDuration } from '@/lib/utils'
 import type { Topic } from '@/types'
@@ -15,6 +16,8 @@ const TARGET_WORDS = 120
 
 export default function Write() {
   const navigate = useNavigate()
+  const { language } = useLanguage()
+  const t = useT()
   const [topic, setTopic] = useState<Topic | null>(null)
   const [customPrompt, setCustomPrompt] = useState('')
   const [text, setText] = useState('')
@@ -59,9 +62,10 @@ export default function Write() {
     if (topic) textareaRef.current?.focus()
   }, [topic])
 
+  const allTopics = useMemo(() => topicsFor(language), [language])
   const visibleTopics = useMemo(
-    () => (category === 'All' ? TOPICS : TOPICS.filter((t) => t.category === category)),
-    [category],
+    () => (category === 'All' ? allTopics : allTopics.filter((t) => t.category === category)),
+    [allTopics, category],
   )
 
   async function handleSubmit() {
@@ -79,7 +83,7 @@ export default function Write() {
       localStorage.removeItem(DRAFT_KEY)
       navigate(`/session/${session.id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong. Your text is safe.')
+      setError(err instanceof Error ? err.message : t('write.failed'))
       setSubmitting(false)
     }
   }
@@ -89,9 +93,10 @@ export default function Write() {
     if (!prompt) return
     setTopic({
       id: 'custom',
+      language,
       title: prompt.length > 60 ? `${prompt.slice(0, 57)}...` : prompt,
       prompt,
-      category: 'Your own',
+      category: t('write.ownCategory'),
       level: 'B1',
     })
   }
@@ -111,7 +116,7 @@ export default function Write() {
           className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition hover:text-fg"
         >
           <ArrowLeft className="size-4" />
-          Choose a different topic
+          {t('write.changeTopic')}
         </button>
 
         <Card>
@@ -129,13 +134,13 @@ export default function Write() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={submitting}
-            placeholder="Start writing. Do not worry about mistakes - finding them is the point."
+            placeholder={t('write.placeholder')}
             className="min-h-[45vh] w-full resize-y bg-transparent p-5 text-base leading-relaxed text-fg outline-none placeholder:text-fg-faint disabled:opacity-60"
           />
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-4 py-3">
             <div className="flex items-center gap-4 text-sm text-fg-faint">
               <span className={wordCount >= TARGET_WORDS ? 'text-good' : undefined}>
-                {wordCount} / {TARGET_WORDS} words
+                {t('write.wordCount', { count: wordCount, target: TARGET_WORDS })}
               </span>
               <span>{formatDuration(seconds)}</span>
             </div>
@@ -159,17 +164,17 @@ export default function Write() {
             {submitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Checking your writing...
+                {t('write.checking')}
               </>
             ) : (
               <>
                 <Sparkles className="size-4" />
-                Check my writing
+                {t('write.check')}
               </>
             )}
           </Button>
           {wordCount < 10 && (
-            <span className="text-sm text-fg-faint">Write at least 10 words to get feedback.</span>
+            <span className="text-sm text-fg-faint">{t('write.tooShort')}</span>
           )}
         </div>
       </div>
@@ -180,45 +185,43 @@ export default function Write() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Writing practice</h1>
-        <p className="mt-1 text-sm text-fg-muted">
-          Pick a topic and write. Every mistake gets explained, and your weak areas become lessons.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('write.title')}</h1>
+        <p className="mt-1 text-sm text-fg-muted">{t('write.subtitle')}</p>
       </header>
 
       <Card>
         <SectionHeading
-          title="Write about your own idea"
-          subtitle="Or let the app choose a topic for you."
+          title={t('write.ownIdea')}
+          subtitle={t('write.ownIdeaSub')}
         />
         <div className="flex flex-col gap-2 sm:flex-row">
           <input
             value={customPrompt}
             onChange={(e) => setCustomPrompt(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && startCustom()}
-            placeholder="e.g. Why I want to change career"
+            placeholder={t('write.ownPlaceholder')}
             className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-fg outline-none placeholder:text-fg-faint focus:border-violet/50"
           />
           <Button onClick={startCustom} disabled={!customPrompt.trim()}>
             <PenLine className="size-4" />
-            Start
+            {t('write.start')}
           </Button>
-          <Button variant="outline" onClick={() => setTopic(randomTopic())}>
+          <Button variant="outline" onClick={() => setTopic(randomTopic(language))}>
             <Shuffle className="size-4" />
-            Surprise me
+            {t('write.surprise')}
           </Button>
         </div>
       </Card>
 
       <section>
-        <SectionHeading title="Or choose from the library" />
+        <SectionHeading title={t('write.library')} />
         <Tabs
           tabs={[
-            { id: 'All', label: 'All', count: TOPICS.length },
-            ...TOPIC_CATEGORIES.map((c) => ({
+            { id: 'All', label: t('lessons.all'), count: allTopics.length },
+            ...topicCategoriesFor(language).map((c) => ({
               id: c,
               label: c,
-              count: TOPICS.filter((t) => t.category === c).length,
+              count: allTopics.filter((t) => t.category === c).length,
             })),
           ]}
           active={category}

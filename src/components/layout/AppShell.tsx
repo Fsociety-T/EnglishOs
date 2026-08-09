@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Flame, Menu, X } from 'lucide-react'
+import { useT } from '@/i18n'
 import { cn } from '@/lib/utils'
 import { useStreak } from '@/hooks/useStreak'
 import { NAV_ITEMS, PRIMARY_NAV } from './nav'
@@ -21,9 +22,10 @@ function Logo() {
 }
 
 function NavItems({ onNavigate }: { onNavigate?: () => void }) {
+  const t = useT()
   return (
     <nav className="flex flex-col gap-1">
-      {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+      {NAV_ITEMS.map(({ to, labelKey, icon: Icon }) => (
         <NavLink
           key={to}
           to={to}
@@ -41,7 +43,7 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
           {({ isActive }) => (
             <>
               <Icon className={cn('size-[18px]', isActive && 'text-violet-soft')} />
-              {label}
+              {t(labelKey)}
             </>
           )}
         </NavLink>
@@ -52,10 +54,11 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
 
 function StreakPill() {
   const { current } = useStreak()
+  const t = useT()
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full glass px-3 py-1.5 text-sm font-semibold"
-      title={`${current}-day practice streak`}
+      title={t('shell.streakTitle', { count: current })}
     >
       <Flame className={cn('size-4', current > 0 ? 'text-warn' : 'text-fg-faint')} />
       <span className={current > 0 ? 'text-fg' : 'text-fg-faint'}>{current}</span>
@@ -66,6 +69,7 @@ function StreakPill() {
 export default function AppShell() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const location = useLocation()
+  const t = useT()
 
   // Close the drawer on navigation, and scroll the new page to the top.
   useEffect(() => {
@@ -79,9 +83,7 @@ export default function AppShell() {
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-8 border-r border-white/10 p-5 lg:flex">
         <Logo />
         <NavItems />
-        <p className="mt-auto text-xs leading-relaxed text-fg-faint">
-          Practice, get corrected, and turn your mistakes into lessons.
-        </p>
+        <p className="mt-auto text-xs leading-relaxed text-fg-faint">{t('shell.tagline')}</p>
       </aside>
 
       {/* Mobile drawer */}
@@ -89,7 +91,7 @@ export default function AppShell() {
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            aria-label="Close menu"
+            aria-label={t('shell.closeMenu')}
             className="absolute inset-0 bg-ink-950/70 backdrop-blur-sm"
             onClick={() => setDrawerOpen(false)}
           />
@@ -98,7 +100,7 @@ export default function AppShell() {
               <Logo />
               <button
                 type="button"
-                aria-label="Close menu"
+                aria-label={t('shell.closeMenu')}
                 onClick={() => setDrawerOpen(false)}
                 className="rounded-lg p-1.5 text-fg-muted hover:bg-white/5 hover:text-fg"
               >
@@ -115,7 +117,7 @@ export default function AppShell() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              aria-label="Open menu"
+              aria-label={t('shell.openMenu')}
               onClick={() => setDrawerOpen(true)}
               className="rounded-lg p-1.5 text-fg-muted hover:bg-white/5 hover:text-fg lg:hidden"
             >
@@ -144,7 +146,7 @@ export default function AppShell() {
 
       {/* Mobile bottom tabs */}
       <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-white/10 bg-ink-900/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
-        {PRIMARY_NAV.map(({ to, label, icon: Icon }) => (
+        {PRIMARY_NAV.map(({ to, labelKey, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -157,7 +159,7 @@ export default function AppShell() {
             }
           >
             <Icon className="size-5" />
-            {label}
+            {t(labelKey)}
           </NavLink>
         ))}
       </nav>

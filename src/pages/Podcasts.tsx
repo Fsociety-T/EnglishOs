@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Headphones, Plus, Trash2 } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, Spinner, Tabs } from '@/components/ui'
+import { useT } from '@/i18n'
+import type { StringKey } from '@/i18n/strings'
 import { useAsync } from '@/hooks/useAsync'
 import { guessTitle, parseMediaUrl } from '@/lib/media'
 import { formatRelative, newId } from '@/lib/utils'
@@ -10,14 +12,15 @@ import type { PodcastStatus } from '@/types'
 
 type Tab = 'all' | PodcastStatus
 
-const STATUS_LABEL: Record<PodcastStatus, string> = {
-  'to-watch': 'To watch',
-  watching: 'Watching',
-  done: 'Done',
+const STATUS_KEY: Record<PodcastStatus, StringKey> = {
+  'to-watch': 'pod.toWatch',
+  watching: 'pod.watching',
+  done: 'pod.done',
 }
 
 export default function Podcasts() {
   const repo = useRepo()
+  const t = useT()
   const [tab, setTab] = useState<Tab>('all')
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
@@ -36,7 +39,7 @@ export default function Podcasts() {
 
     const parsed = parseMediaUrl(trimmed)
     if (parsed.platform === 'other' && !/^https?:\/\//i.test(trimmed)) {
-      setError('That does not look like a link. Paste a full URL starting with https://')
+      setError(t('pod.badLink'))
       setAdding(false)
       return
     }
@@ -58,7 +61,7 @@ export default function Podcasts() {
     reload()
   }
 
-  if (loading) return <Spinner label="Loading your shelf..." />
+  if (loading) return <Spinner label={t('pod.loading')} />
 
   const inputClass =
     'w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-fg outline-none placeholder:text-fg-faint focus:border-violet/50'
@@ -78,14 +81,14 @@ export default function Podcasts() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && add()}
-            placeholder="Paste a YouTube or Spotify link"
+            placeholder={t('pod.linkPlaceholder')}
             className={inputClass}
           />
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && add()}
-            placeholder="Title (optional)"
+            placeholder={t('pod.titlePlaceholder')}
             className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-fg outline-none placeholder:text-fg-faint focus:border-violet/50 sm:w-56"
           />
           <Button onClick={add} disabled={!url.trim() || adding}>
@@ -99,25 +102,25 @@ export default function Podcasts() {
       {all.length === 0 ? (
         <EmptyState
           icon={<Headphones className="size-6" />}
-          title="Your shelf is empty"
-          body="Paste a YouTube or Spotify link above. You can watch it here, take notes with timestamps, and send any new word straight to your notebook."
+          title={t('pod.emptyTitle')}
+          body={t('pod.emptyBody')}
         />
       ) : (
         <section>
           <Tabs
             tabs={[
-              { id: 'all', label: 'All', count: all.length },
+              { id: 'all', label: t('lessons.all'), count: all.length },
               {
                 id: 'to-watch',
-                label: 'To watch',
+                label: t('pod.toWatch'),
                 count: all.filter((p) => p.status === 'to-watch').length,
               },
               {
                 id: 'watching',
-                label: 'Watching',
+                label: t('pod.watching'),
                 count: all.filter((p) => p.status === 'watching').length,
               },
-              { id: 'done', label: 'Done', count: all.filter((p) => p.status === 'done').length },
+              { id: 'done', label: t('pod.done'), count: all.filter((p) => p.status === 'done').length },
             ]}
             active={tab}
             onChange={setTab}
@@ -167,7 +170,7 @@ export default function Podcasts() {
                             : 'neutral'
                       }
                     >
-                      {STATUS_LABEL[podcast.status]}
+                      {t(STATUS_KEY[podcast.status])}
                     </Badge>
                     <span className="text-xs text-fg-faint">
                       {formatRelative(podcast.createdAt)}
