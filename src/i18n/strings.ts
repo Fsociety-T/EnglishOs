@@ -65,7 +65,7 @@ const en = {
   'settings.namePlaceholder': 'Learner',
   'settings.languageLabel': 'Language you are learning',
   'settings.languageHint':
-    'Changing this switches the whole app, including your lessons and practice topics.',
+    'Chosen when you signed up. Every topic, lesson and correction is in {language}, and anything you write in another language is not corrected.',
   'settings.levelLabel': 'Your {language} level',
   'settings.goalLabel': 'Daily goal:',
   'settings.goalHint': 'Small and daily beats long and rare. Fifteen minutes is a good start.',
@@ -434,6 +434,14 @@ const en = {
   'crash.reload': 'Reload the app',
   'crash.goHome': 'Go to the dashboard',
 
+  /* ------------------------------------------------------ language names -- */
+  // Lowercase on purpose: these appear mid-sentence, where French would write
+  // "en anglais" rather than "en Anglais".
+  'lang.en': 'English',
+  'lang.fr': 'French',
+  'practice.wrongLanguage':
+    'This looks like {detected}, not {expected}. You are practising {expected}, so it has not been corrected. Rewrite it in {expected} and send it again.',
+
   /* ---------------------------------------------------------- CEFR hints -- */
   'level.A1': 'Beginner - simple words and phrases',
   'level.A2': 'Elementary - everyday basics',
@@ -501,7 +509,7 @@ const fr: Record<StringKey, string> = {
   'settings.namePlaceholder': 'Apprenant',
   'settings.languageLabel': 'Langue que vous apprenez',
   'settings.languageHint':
-    'Changer ce réglage bascule toute l’application, y compris vos leçons et vos sujets de pratique.',
+    'Choisie à l’inscription. Tous les sujets, les leçons et les corrections sont en {language}, et ce que vous écrivez dans une autre langue n’est pas corrigé.',
   'settings.levelLabel': 'Votre niveau de {language}',
   'settings.goalLabel': 'Objectif quotidien :',
   'settings.goalHint':
@@ -883,6 +891,12 @@ const fr: Record<StringKey, string> = {
     'Vos sessions, vos mots et votre série sont en sécurité - rien n’a été supprimé. Recharger règle généralement le problème.',
   'crash.reload': 'Recharger l’application',
   'crash.goHome': 'Aller au tableau de bord',
+
+  /* ------------------------------------------------------ language names -- */
+  'lang.en': 'anglais',
+  'lang.fr': 'français',
+  'practice.wrongLanguage':
+    'Ce texte semble être en {detected}, pas en {expected}. Vous pratiquez le {expected} : il n’a donc pas été corrigé. Réécrivez-le en {expected} et renvoyez-le.',
 
   /* ---------------------------------------------------------- CEFR hints -- */
   'level.A1': 'Débutant - mots et phrases simples',

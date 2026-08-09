@@ -37,8 +37,6 @@ export type Translate = (key: StringKey, vars?: Record<string, string | number>)
 interface LanguageContextValue {
   language: LearningLanguage
   t: Translate
-  /** Switch language and persist it to the profile. */
-  setLanguage: (language: LearningLanguage) => Promise<void>
   /**
    * Switch the interface without writing to the profile. The sign-up screen
    * needs this: there is no account to save against yet, but the form should
@@ -103,14 +101,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     writeCache(next)
   }, [])
 
-  const setLanguage = useCallback(
-    async (next: LearningLanguage) => {
-      previewLanguage(next)
-      const profile = await repo.getProfile()
-      await repo.saveProfile({ ...profile, language: next })
-    },
-    [previewLanguage],
-  )
+  // There is deliberately no setLanguage. The learning language is chosen once
+  // at sign-up and fixed after that: it decides which lessons, topics, grammar
+  // rules and history a learner sees, so switching it mid-account would empty
+  // every screen at once rather than translate them.
 
   const t = useCallback<Translate>(
     (key, vars) => interpolate(STRINGS[language][key] ?? STRINGS.en[key] ?? key, vars),
@@ -118,8 +112,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo(
-    () => ({ language, t, setLanguage, previewLanguage }),
-    [language, t, setLanguage, previewLanguage],
+    () => ({ language, t, previewLanguage }),
+    [language, t, previewLanguage],
   )
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>

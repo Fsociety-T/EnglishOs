@@ -18,14 +18,14 @@ import { signOut, useAuth } from '@/hooks/useAuth'
 import { useLanguage } from '@/i18n'
 import { ai } from '@/services/ai'
 import { useRepo } from '@/services/db'
-import { CEFR_LEVELS, DEFAULT_PROFILE, LANGUAGE_NAME, LEARNING_LANGUAGES } from '@/types'
-import type { CefrLevel, LearningLanguage } from '@/types'
+import { CEFR_LEVELS, DEFAULT_PROFILE, LANGUAGE_NAME } from '@/types'
+import type { CefrLevel } from '@/types'
 import { cn } from '@/lib/utils'
 
 export default function Settings() {
   const repo = useRepo()
   const { email } = useAuth()
-  const { language, t, setLanguage } = useLanguage()
+  const { language, t } = useLanguage()
   const { data: profile, loading, reload } = useAsync(() => repo.getProfile(), [])
   const { data: sessions } = useSessions()
 
@@ -58,17 +58,6 @@ export default function Settings() {
     })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
-    reload()
-  }
-
-  /**
-   * Switching language rewrites every screen, so it is saved immediately
-   * rather than waiting for "Save changes" - a half-switched app where the
-   * menu is French and the lessons are English would just look broken.
-   */
-  async function changeLanguage(next: LearningLanguage) {
-    if (next === language) return
-    await setLanguage(next)
     reload()
   }
 
@@ -132,29 +121,19 @@ export default function Settings() {
             />
           </div>
 
+          {/* Stated, not offered. The language is chosen once at sign-up and
+              the whole app is built around it - showing the other one here
+              would invite a switch that empties every list on the screen. */}
           <div>
             <span className="mb-1.5 block text-sm text-fg-muted">
               {t('settings.languageLabel')}
             </span>
-            <div className="grid grid-cols-2 gap-2">
-              {LEARNING_LANGUAGES.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => void changeLanguage(option)}
-                  aria-pressed={language === option}
-                  className={cn(
-                    'rounded-xl border px-3 py-2.5 text-sm font-semibold transition',
-                    language === option
-                      ? 'border-violet/40 bg-violet/15 text-fg'
-                      : 'border-white/10 bg-white/5 text-fg-muted hover:bg-white/10',
-                  )}
-                >
-                  {LANGUAGE_NAME[option]}
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-sm text-fg-faint">{t('settings.languageHint')}</p>
+            <p className="rounded-xl border border-violet/30 bg-violet/10 px-4 py-2.5 text-sm font-semibold text-fg">
+              {LANGUAGE_NAME[language]}
+            </p>
+            <p className="mt-2 text-sm text-fg-faint">
+              {t('settings.languageHint', { language: LANGUAGE_NAME[language] })}
+            </p>
           </div>
 
           <div>

@@ -7,6 +7,7 @@ import type { PlacementPrompt } from '@/data/placement'
 import { useAsync } from '@/hooks/useAsync'
 import { useLanguage, useT } from '@/i18n'
 import { MIN_WORDS_FOR_LEVEL } from '@/lib/level'
+import { practiceErrorMessage } from '@/lib/practiceError'
 import { submitPlacement } from '@/lib/session'
 import { countWords } from '@/lib/text'
 import { formatDuration } from '@/lib/utils'
@@ -158,7 +159,7 @@ export default function LevelTest() {
       setResult(placement)
       setStage('result')
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('placement.failed'))
+      setError(practiceErrorMessage(err, t, 'placement.failed'))
     } finally {
       setSubmitting(false)
     }

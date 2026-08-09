@@ -7,6 +7,7 @@ import { speechRecognitionSupported, useSpeechRecognition } from '@/hooks/useSpe
 import { randomTopic, topicCategoriesFor, topicsFor } from '@/data/topics'
 import { computeFluencyMetrics, countWords } from '@/lib/text'
 import { useLanguage, useT } from '@/i18n'
+import { practiceErrorMessage } from '@/lib/practiceError'
 import { submitPractice } from '@/lib/session'
 import { cn, formatDuration } from '@/lib/utils'
 import type { Topic } from '@/types'
@@ -92,9 +93,7 @@ export default function Speak() {
       })
       navigate(`/session/${session.id}`)
     } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : t('speak.failed'),
-      )
+      setSubmitError(practiceErrorMessage(err, t, 'speak.failed'))
       setSubmitting(false)
     }
   }
