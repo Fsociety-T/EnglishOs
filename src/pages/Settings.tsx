@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { AlertTriangle, Check, Cloud, Cpu, Download, HardDrive, Upload } from 'lucide-react'
+import { AlertTriangle, Check, Cloud, Cpu, Download, HardDrive, LogOut, Upload } from 'lucide-react'
 import { Badge, Button, Card, SectionHeading, Spinner } from '@/components/ui'
 import { useAsync } from '@/hooks/useAsync'
 import { signOut, useAuth } from '@/hooks/useAuth'
@@ -47,6 +47,12 @@ export default function Settings() {
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
     reload()
+  }
+
+  async function handleSignOut() {
+    await signOut()
+    // A full reload clears every screen's cached data along with the session.
+    window.location.reload()
   }
 
   async function exportData() {
@@ -186,22 +192,26 @@ export default function Settings() {
                   ? `Signed in as ${email ?? 'your account'}. Everything syncs between your devices automatically.`
                   : 'Everything is saved in this browser on this device. Export a backup below before clearing your browser data, or to move to another computer.'}
               </p>
-              {repo.isCloud && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await signOut()
-                    window.location.reload()
-                  }}
-                  className="mt-2 text-sm text-fg-faint underline transition hover:text-fg"
-                >
-                  Sign out
-                </button>
-              )}
             </div>
           </div>
         </div>
       </Card>
+
+      {repo.isCloud && (
+        <Card>
+          <SectionHeading title="Account" subtitle={email ?? undefined} />
+          <p className="text-sm leading-relaxed text-fg-muted">
+            Signing out leaves your data safe in the cloud. Sign back in on any device to pick up
+            where you left off.
+          </p>
+          <div className="mt-4">
+            <Button variant="outline" onClick={handleSignOut}>
+              <LogOut className="size-4" />
+              Sign out
+            </Button>
+          </div>
+        </Card>
+      )}
 
       <Card>
         <SectionHeading
