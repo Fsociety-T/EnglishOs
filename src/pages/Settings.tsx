@@ -3,24 +3,17 @@ import { AlertTriangle, Check, Cloud, Cpu, Download, HardDrive, LogOut, Upload }
 import { Badge, Button, Card, SectionHeading, Spinner } from '@/components/ui'
 import { useAsync } from '@/hooks/useAsync'
 import { signOut, useAuth } from '@/hooks/useAuth'
+import { useLanguage } from '@/i18n'
 import { ai } from '@/services/ai'
 import { useRepo } from '@/services/db'
-import { CEFR_LEVELS } from '@/types'
-import type { CefrLevel } from '@/types'
+import { CEFR_LEVELS, LANGUAGE_NAME, LEARNING_LANGUAGES } from '@/types'
+import type { CefrLevel, LearningLanguage } from '@/types'
 import { cn } from '@/lib/utils'
-
-const LEVEL_HINT: Record<CefrLevel, string> = {
-  A1: 'Beginner - simple words and phrases',
-  A2: 'Elementary - everyday basics',
-  B1: 'Intermediate - can handle most daily situations',
-  B2: 'Upper intermediate - comfortable and fairly fluent',
-  C1: 'Advanced - fluent and precise',
-  C2: 'Near-native',
-}
 
 export default function Settings() {
   const repo = useRepo()
   const { email } = useAuth()
+  const { language, t, setLanguage } = useLanguage()
   const { data: profile, loading, reload } = useAsync(() => repo.getProfile(), [])
 
   const [name, setName] = useState('')
@@ -40,12 +33,24 @@ export default function Settings() {
 
   async function save() {
     await repo.saveProfile({
-      displayName: name.trim() || 'Learner',
+      displayName: name.trim() || t('settings.namePlaceholder'),
+      language,
       level,
       dailyGoalMinutes: Math.max(5, Math.min(180, goal)),
     })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+    reload()
+  }
+
+  /**
+   * Switching language rewrites every screen, so it is saved immediately
+   * rather than waiting for "Save changes" - a half-switched app where the
+   * menu is French and the lessons are English would just look broken.
+   */
+  async function changeLanguage(next: LearningLanguage) {
+    if (next === language) return
+    await setLanguage(next)
     reload()
   }
 
@@ -74,11 +79,11 @@ export default function Settings() {
       // A full reload is the honest way to refresh every screen's cached data.
       window.location.reload()
     } catch {
-      setImportError('That file could not be read. Make sure it is an EnglishOS backup.')
+      setImportError(t('settings.importError'))
     }
   }
 
-  if (loading) return <Spinner label="Loading settings..." />
+  if (loading) return <Spinner label={t('settings.loading')} />
 
   const inputClass =
     'w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-fg outline-none placeholder:text-fg-faint focus:border-violet/50'
@@ -86,27 +91,54 @@ export default function Settings() {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Settings</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('settings.title')}</h1>
       </header>
 
       <Card>
-        <SectionHeading title="About you" />
+        <SectionHeading title={t('settings.aboutYou')} />
         <div className="space-y-4">
           <div>
             <label htmlFor="name" className="mb-1.5 block text-sm text-fg-muted">
-              What should the app call you?
+              {t('settings.nameLabel')}
             </label>
             <input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Learner"
+              placeholder={t('settings.namePlaceholder')}
               className={inputClass}
             />
           </div>
 
           <div>
-            <span className="mb-1.5 block text-sm text-fg-muted">Your English level</span>
+            <span className="mb-1.5 block text-sm text-fg-muted">
+              {t('settings.languageLabel')}
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              {LEARNING_LANGUAGES.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => void changeLanguage(option)}
+                  aria-pressed={language === option}
+                  className={cn(
+                    'rounded-xl border px-3 py-2.5 text-sm font-semibold transition',
+                    language === option
+                      ? 'border-violet/40 bg-violet/15 text-fg'
+                      : 'border-white/10 bg-white/5 text-fg-muted hover:bg-white/10',
+                  )}
+                >
+                  {LANGUAGE_NAME[option]}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-sm text-fg-faint">{t('settings.languageHint')}</p>
+          </div>
+
+          <div>
+            <span className="mb-1.5 block text-sm text-fg-muted">
+              {t('settings.levelLabel', { language: LANGUAGE_NAME[language] })}
+            </span>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
               {CEFR_LEVELS.map((option) => (
                 <button
@@ -124,12 +156,15 @@ export default function Settings() {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-sm text-fg-faint">{LEVEL_HINT[level]}</p>
+            <p className="mt-2 text-sm text-fg-faint">{t(`level.${level}`)}</p>
           </div>
 
           <div>
             <label htmlFor="goal" className="mb-1.5 block text-sm text-fg-muted">
-              Daily goal: <span className="font-semibold text-fg">{goal} minutes</span>
+              {t('settings.goalLabel')}{' '}
+              <span className="font-semibold text-fg">
+                {goal} {t('common.minutes')}
+              </span>
             </label>
             <input
               id="goal"
@@ -141,25 +176,23 @@ export default function Settings() {
               onChange={(e) => setGoal(Number(e.target.value))}
               className="w-full accent-violet"
             />
-            <p className="mt-1 text-sm text-fg-faint">
-              Small and daily beats long and rare. Fifteen minutes is a good start.
-            </p>
+            <p className="mt-1 text-sm text-fg-faint">{t('settings.goalHint')}</p>
           </div>
         </div>
 
         <div className="mt-5 flex items-center gap-3">
-          <Button onClick={save}>Save changes</Button>
+          <Button onClick={save}>{t('common.save')}</Button>
           {saved && (
             <span className="inline-flex items-center gap-1.5 text-sm text-good">
               <Check className="size-4" />
-              Saved
+              {t('common.saved')}
             </span>
           )}
         </div>
       </Card>
 
       <Card>
-        <SectionHeading title="How the app is set up" />
+        <SectionHeading title={t('settings.setup')} />
         <div className="space-y-3">
           <div className="flex items-start gap-3">
             <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-violet/10 text-violet-soft">
@@ -167,13 +200,11 @@ export default function Settings() {
             </span>
             <div className="min-w-0">
               <p className="flex flex-wrap items-center gap-2 font-medium text-fg">
-                Corrections
+                {t('settings.corrections')}
                 <Badge tone={ai.isReal ? 'good' : 'warn'}>{ai.name}</Badge>
               </p>
               <p className="mt-1 text-sm leading-relaxed text-fg-faint">
-                {ai.isReal
-                  ? 'Your writing and speaking are reviewed by the full AI.'
-                  : 'The offline engine reliably catches common mistakes, but it is not the full AI. Real AI review is the last step of the build.'}
+                {ai.isReal ? t('settings.correctionsReal') : t('settings.correctionsMock')}
               </p>
             </div>
           </div>
@@ -184,13 +215,13 @@ export default function Settings() {
             </span>
             <div className="min-w-0">
               <p className="flex flex-wrap items-center gap-2 font-medium text-fg">
-                Your data
+                {t('settings.yourData')}
                 <Badge tone={repo.isCloud ? 'good' : 'neutral'}>{repo.name}</Badge>
               </p>
               <p className="mt-1 text-sm leading-relaxed text-fg-faint">
                 {repo.isCloud
-                  ? `Signed in as ${email ?? 'your account'}. Everything syncs between your devices automatically.`
-                  : 'Everything is saved in this browser on this device. Export a backup below before clearing your browser data, or to move to another computer.'}
+                  ? t('settings.dataCloud', { email: email ?? '' })
+                  : t('settings.dataLocal')}
               </p>
             </div>
           </div>
@@ -199,15 +230,12 @@ export default function Settings() {
 
       {repo.isCloud && (
         <Card>
-          <SectionHeading title="Account" subtitle={email ?? undefined} />
-          <p className="text-sm leading-relaxed text-fg-muted">
-            Signing out leaves your data safe in the cloud. Sign back in on any device to pick up
-            where you left off.
-          </p>
+          <SectionHeading title={t('settings.account')} subtitle={email ?? undefined} />
+          <p className="text-sm leading-relaxed text-fg-muted">{t('settings.signOutBlurb')}</p>
           <div className="mt-4">
             <Button variant="outline" onClick={handleSignOut}>
               <LogOut className="size-4" />
-              Sign out
+              {t('settings.signOut')}
             </Button>
           </div>
         </Card>
@@ -215,17 +243,17 @@ export default function Settings() {
 
       <Card>
         <SectionHeading
-          title="Backup"
-          subtitle="Your sessions, lessons, words, podcasts and streak, as one file."
+          title={t('settings.backup')}
+          subtitle={t('settings.backupSubtitle')}
         />
         <div className="flex flex-wrap gap-3">
           <Button variant="outline" onClick={exportData}>
             <Download className="size-4" />
-            Export my data
+            {t('settings.export')}
           </Button>
           <Button variant="outline" onClick={() => fileRef.current?.click()}>
             <Upload className="size-4" />
-            Import a backup
+            {t('settings.import')}
           </Button>
           <input
             ref={fileRef}
@@ -241,21 +269,18 @@ export default function Settings() {
         </div>
         {importError && <p className="mt-3 text-sm text-bad">{importError}</p>}
         <p className="mt-3 text-sm text-fg-faint">
-          Importing replaces everything currently saved. Export first if you are not sure.
+          {t('settings.importWarning')}
         </p>
       </Card>
 
       <Card className="border-bad/30">
-        <SectionHeading title="Start over" />
-        <p className="text-sm leading-relaxed text-fg-muted">
-          Deletes every session, lesson, word, podcast and streak on this device. This cannot be
-          undone.
-        </p>
+        <SectionHeading title={t('settings.reset')} />
+        <p className="text-sm leading-relaxed text-fg-muted">{t('settings.resetBlurb')}</p>
         <div className="mt-4">
           {!confirmReset ? (
             <Button variant="danger" onClick={() => setConfirmReset(true)}>
               <AlertTriangle className="size-4" />
-              Delete all my data
+              {t('settings.resetButton')}
             </Button>
           ) : (
             <div className="flex flex-wrap items-center gap-3">
@@ -266,10 +291,10 @@ export default function Settings() {
                   window.location.reload()
                 }}
               >
-                Yes, delete everything
+                {t('settings.resetConfirm')}
               </Button>
               <Button variant="ghost" onClick={() => setConfirmReset(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
             </div>
           )}

@@ -9,6 +9,7 @@ import type {
   SrsBox,
   VocabWord,
 } from '@/types'
+import { DEFAULT_PROFILE } from '@/types'
 import { localDay } from '@/lib/utils'
 import { seedStore } from './seed'
 import type { Repository } from './types'
@@ -27,7 +28,7 @@ export interface Store {
 
 function emptyStore(): Store {
   return {
-    profile: { displayName: 'Learner', level: 'B1', dailyGoalMinutes: 20 },
+    profile: { ...DEFAULT_PROFILE },
     sessions: [],
     lessons: [],
     vocabulary: [],
@@ -80,7 +81,8 @@ export const demoRepo: Repository = {
   isCloud: false,
 
   async getProfile() {
-    return clone(read().profile)
+    // A store written before the French version has no language field.
+    return { ...DEFAULT_PROFILE, ...clone(read().profile) }
   },
   async saveProfile(profile) {
     mutate((s) => {

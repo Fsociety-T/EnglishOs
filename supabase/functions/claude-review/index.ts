@@ -13,6 +13,10 @@ const ERROR_TYPES = new Set([
   'collocation',
   'punctuation',
   'word-choice',
+  // French-only categories. Kept in the shared set so one schema serves both
+  // languages; the prompt is what stops them being used for English.
+  'gender-agreement',
+  'accent',
   'other',
 ])
 const SEVERITIES = new Set(['minor', 'moderate', 'major'])
@@ -59,19 +63,56 @@ function parseModelJson(raw: string): unknown {
   return JSON.parse(unwrapped)
 }
 
+/**
+ * The language being learned. Anything unrecognised falls back to English so a
+ * malformed request still produces a usable review rather than an error.
+ */
+function language(input: Record<string, unknown>): 'en' | 'fr' {
+  return input.language === 'fr' ? 'fr' : 'en'
+}
+
+interface LanguageProfile {
+  /** The language named in English, for the instruction sentence. */
+  name: string
+  /** The error types this language can produce, as a prompt enum. */
+  errorTypes: string
+  /** How the feedback prose itself should be written. */
+  feedbackLanguage: string
+}
+
+const LANGUAGE_PROFILE: Record<'en' | 'fr', LanguageProfile> = {
+  en: {
+    name: 'English',
+    errorTypes:
+      'verb-tense|article|preposition|word-order|subject-verb-agreement|plural|spelling|collocation|punctuation|word-choice|other',
+    feedbackLanguage:
+      'Write every explanation, summary, strength and next-focus item in clear, simple English.',
+  },
+  fr: {
+    name: 'French',
+    errorTypes:
+      'verb-tense|gender-agreement|accent|article|preposition|word-order|subject-verb-agreement|plural|spelling|punctuation|word-choice|other',
+    feedbackLanguage:
+      'Write every explanation, summary, strength and next-focus item in clear, simple French — the learner reads the app in French. Use "gender-agreement" for adjective and participle agreement mistakes, and "accent" for missing or wrong accents including the -er/-é confusion.',
+  },
+}
+
 function reviewPrompt(kind: 'writing' | 'speaking', input: Record<string, unknown>): string {
   const learnerText = text(kind === 'writing' ? input.text : input.transcript, 12_000)
   const metrics = kind === 'speaking' ? input.metrics : undefined
-  return `You are an expert, encouraging English teacher. Review the learner's ${kind} at CEFR ${text(input.level, 8)}. Correct only genuine issues; do not rewrite for style alone.\n\nReturn a JSON object with exactly this shape:\n{"correctedText":"the learner's full text with every correction applied","corrections":[{"original":"string","corrected":"string","explanation":"plain English","errorType":"verb-tense|article|preposition|word-order|subject-verb-agreement|plural|spelling|collocation|punctuation|word-choice|other","severity":"minor|moderate|major","charStart":0,"charEnd":0}],"scores":{"overall":0,"grammar":0,"vocabulary":0,"fluency":0},"summary":"1-2 specific encouraging sentences","strengths":["string"],"nextFocus":["string"]}\n\nEvery one of correctedText, corrections, scores, summary, strengths and nextFocus is REQUIRED. Include all six even when the text is very short or already correct — use an empty array for corrections, strengths or nextFocus when you have nothing to add, and still give scores and a summary. Scores are integers from 0 to 100. Give at most three strengths and three nextFocus items.\n\nCritical rule for offsets: charStart and charEnd are JavaScript string offsets into the exact learner text below, and original MUST equal learnerText.slice(charStart, charEnd) character for character. Count the offsets carefully — a correction whose offsets do not match its original text is discarded.\n\nTopic: ${text(input.topic, 300)}\n${metrics ? `Local speaking metrics (do not invent audio facts): ${JSON.stringify(metrics)}\n` : ''}Learner text:\n${learnerText}`
+  const profile = LANGUAGE_PROFILE[language(input)]
+  return `You are an expert, encouraging ${profile.name} teacher. Review the learner's ${kind} at CEFR ${text(input.level, 8)}. The learner is writing in ${profile.name}; judge it by ${profile.name} rules only. Correct only genuine issues; do not rewrite for style alone.\n\n${profile.feedbackLanguage}\n\nReturn a JSON object with exactly this shape:\n{"correctedText":"the learner's full text with every correction applied","corrections":[{"original":"string","corrected":"string","explanation":"plain language","errorType":"${profile.errorTypes}","severity":"minor|moderate|major","charStart":0,"charEnd":0}],"scores":{"overall":0,"grammar":0,"vocabulary":0,"fluency":0},"summary":"1-2 specific encouraging sentences","strengths":["string"],"nextFocus":["string"]}\n\nEvery one of correctedText, corrections, scores, summary, strengths and nextFocus is REQUIRED. Include all six even when the text is very short or already correct — use an empty array for corrections, strengths or nextFocus when you have nothing to add, and still give scores and a summary. Scores are integers from 0 to 100. Give at most three strengths and three nextFocus items.\n\nCritical rule for offsets: charStart and charEnd are JavaScript string offsets into the exact learner text below, and original MUST equal learnerText.slice(charStart, charEnd) character for character. Count the offsets carefully — a correction whose offsets do not match its original text is discarded.\n\nTopic: ${text(input.topic, 300)}\n${metrics ? `Local speaking metrics (do not invent audio facts): ${JSON.stringify(metrics)}\n` : ''}Learner text:\n${learnerText}`
 }
 
 function lessonsPrompt(input: Record<string, unknown>): string {
   const corrections = Array.isArray(input.corrections) ? input.corrections.slice(0, 20) : []
-  return `You are an English teacher creating concise personalised mini-lessons for CEFR ${text(input.level, 8)}. Use the learner's actual mistakes. Return one to three lessons, grouped by the most important error types.\n\nReturn a JSON object with exactly this shape:\n{"lessons":[{"errorType":"verb-tense|article|preposition|word-order|subject-verb-agreement|plural|spelling|collocation|punctuation|word-choice|other","title":"string","body":"short markdown explanation","examples":[{"wrong":"string","right":"string","note":"string"}],"exercises":[{"question":"string","choices":["string","string","string","string"],"answerIndex":0,"explanation":"string"}],"sourceSessionId":null,"sourceSentence":null}]}\n\nEvery field shown is REQUIRED on every lesson. Use an empty string for "note" when there is nothing to add, and null for a source field you cannot determine. answerIndex is the 0-based position of the correct choice.\n\nCorrections: ${JSON.stringify(corrections)}\nSource text: ${text(input.sourceText, 12_000)}`
+  const profile = LANGUAGE_PROFILE[language(input)]
+  return `You are a ${profile.name} teacher creating concise personalised mini-lessons for CEFR ${text(input.level, 8)}. Use the learner's actual mistakes. Return one to three lessons, grouped by the most important error types.\n\n${profile.feedbackLanguage} Every example and exercise must be in ${profile.name}.\n\nReturn a JSON object with exactly this shape:\n{"lessons":[{"errorType":"${profile.errorTypes}","title":"string","body":"short markdown explanation","examples":[{"wrong":"string","right":"string","note":"string"}],"exercises":[{"question":"string","choices":["string","string","string","string"],"answerIndex":0,"explanation":"string"}],"sourceSessionId":null,"sourceSentence":null}]}\n\nEvery field shown is REQUIRED on every lesson. Use an empty string for "note" when there is nothing to add, and null for a source field you cannot determine. answerIndex is the 0-based position of the correct choice.\n\nCorrections: ${JSON.stringify(corrections)}\nSource text: ${text(input.sourceText, 12_000)}`
 }
 
 function vocabularyPrompt(input: Record<string, unknown>): string {
-  return `Suggest five useful English vocabulary words for a CEFR ${text(input.level, 8)} learner based on the text below. Do not repeat words already used in the text.\n\nReturn a JSON object with exactly this shape:\n{"words":[{"word":"string","phonetic":"IPA string","partOfSpeech":"string","definition":"clear short definition","example":"natural example sentence"}]}\n\nEvery field shown is REQUIRED on every word. Use an empty string for "phonetic" if you are unsure of the IPA.\n\nText:\n${text(input.text, 12_000)}`
+  const profile = LANGUAGE_PROFILE[language(input)]
+  return `Suggest five useful ${profile.name} vocabulary words for a CEFR ${text(input.level, 8)} learner based on the text below. Do not repeat words already used in the text.\n\n${profile.feedbackLanguage} The definitions and example sentences must be in ${profile.name}.\n\nReturn a JSON object with exactly this shape:\n{"words":[{"word":"string","phonetic":"IPA string","partOfSpeech":"string","definition":"clear short definition","example":"natural example sentence"}]}\n\nEvery field shown is REQUIRED on every word. Use an empty string for "phonetic" if you are unsure of the IPA.\n\nText:\n${text(input.text, 12_000)}`
 }
 
 /**

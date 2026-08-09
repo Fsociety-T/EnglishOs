@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, RotateCcw, X } from 'lucide-react'
 import Prose from '@/components/Prose'
 import { Badge, Button, Card, SectionHeading, Spinner } from '@/components/ui'
+import { useLanguage } from '@/i18n'
 import { useAsync } from '@/hooks/useAsync'
 import { ERROR_TONE } from '@/lib/errorStyles'
 import { cn } from '@/lib/utils'
@@ -16,6 +17,7 @@ export default function LessonDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const repo = useRepo()
+  const { language } = useLanguage()
 
   const [quizStarted, setQuizStarted] = useState(false)
   const [questionIndex, setQuestionIndex] = useState(0)
@@ -94,7 +96,7 @@ export default function LessonDetail() {
               ERROR_TONE[lesson.errorType].chip,
             )}
           >
-            {ERROR_TYPE_LABEL[lesson.errorType]}
+            {ERROR_TYPE_LABEL[language][lesson.errorType]}
           </span>
           {lesson.status === 'mastered' && (
             <Badge tone="good">

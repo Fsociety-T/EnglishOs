@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { BookMarked, Flame, GraduationCap, Mic, PenLine, Timer, Type } from 'lucide-react'
 import { Button, Card, ProgressRing, SectionHeading, StatTile } from '@/components/ui'
+import { useSessions, useVocabulary } from '@/hooks/useContent'
 import { useAsync } from '@/hooks/useAsync'
 import { computeStreak } from '@/lib/streak'
 import { formatRelative, localDay } from '@/lib/utils'
@@ -37,8 +38,8 @@ export default function Dashboard() {
   const repo = useRepo()
   const { data: stats } = useAsync(() => repo.listDailyStats(), [])
   const { data: profile } = useAsync(() => repo.getProfile(), [])
-  const { data: sessions } = useAsync(() => repo.listSessions(), [])
-  const { data: vocabulary } = useAsync(() => repo.listVocabulary(), [])
+  const { data: sessions } = useSessions()
+  const { data: vocabulary } = useVocabulary()
 
   const streak = computeStreak(stats ?? [])
   const today = (stats ?? []).find((s) => s.day === localDay())

@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2, PenLine, Shuffle, Sparkles } from 'lucide-react'
 import { Badge, Button, Card, SectionHeading, Tabs } from '@/components/ui'
-import { TOPICS, TOPIC_CATEGORIES, randomTopic } from '@/data/topics'
+import { randomTopic, topicCategoriesFor, topicsFor } from '@/data/topics'
 import { countWords } from '@/lib/text'
+import { useLanguage } from '@/i18n'
 import { submitPractice } from '@/lib/session'
 import { formatDuration } from '@/lib/utils'
 import type { Topic } from '@/types'
@@ -15,6 +16,7 @@ const TARGET_WORDS = 120
 
 export default function Write() {
   const navigate = useNavigate()
+  const { language } = useLanguage()
   const [topic, setTopic] = useState<Topic | null>(null)
   const [customPrompt, setCustomPrompt] = useState('')
   const [text, setText] = useState('')
@@ -59,9 +61,10 @@ export default function Write() {
     if (topic) textareaRef.current?.focus()
   }, [topic])
 
+  const allTopics = useMemo(() => topicsFor(language), [language])
   const visibleTopics = useMemo(
-    () => (category === 'All' ? TOPICS : TOPICS.filter((t) => t.category === category)),
-    [category],
+    () => (category === 'All' ? allTopics : allTopics.filter((t) => t.category === category)),
+    [allTopics, category],
   )
 
   async function handleSubmit() {
@@ -89,6 +92,7 @@ export default function Write() {
     if (!prompt) return
     setTopic({
       id: 'custom',
+      language,
       title: prompt.length > 60 ? `${prompt.slice(0, 57)}...` : prompt,
       prompt,
       category: 'Your own',
@@ -203,7 +207,7 @@ export default function Write() {
             <PenLine className="size-4" />
             Start
           </Button>
-          <Button variant="outline" onClick={() => setTopic(randomTopic())}>
+          <Button variant="outline" onClick={() => setTopic(randomTopic(language))}>
             <Shuffle className="size-4" />
             Surprise me
           </Button>
@@ -214,11 +218,11 @@ export default function Write() {
         <SectionHeading title="Or choose from the library" />
         <Tabs
           tabs={[
-            { id: 'All', label: 'All', count: TOPICS.length },
-            ...TOPIC_CATEGORIES.map((c) => ({
+            { id: 'All', label: 'All', count: allTopics.length },
+            ...topicCategoriesFor(language).map((c) => ({
               id: c,
               label: c,
-              count: TOPICS.filter((t) => t.category === c).length,
+              count: allTopics.filter((t) => t.category === c).length,
             })),
           ]}
           active={category}

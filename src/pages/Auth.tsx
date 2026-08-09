@@ -1,12 +1,16 @@
 import { useState } from 'react'
 import { LockKeyhole, Loader2, LogIn, UserPlus } from 'lucide-react'
 import { Button, Card } from '@/components/ui'
+import { useLanguage } from '@/i18n'
 import { requireSupabase } from '@/services/db/supabaseClient'
+import { LANGUAGE_NAME, LEARNING_LANGUAGES } from '@/types'
+import { cn } from '@/lib/utils'
 
 type Mode = 'sign-in' | 'sign-up'
 
 /** Standard email-and-password authentication for the cloud version of EnglishOS. */
 export default function Auth() {
+  const { language, t, previewLanguage } = useLanguage()
   const [mode, setMode] = useState<Mode>('sign-in')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,11 +33,11 @@ export default function Auth() {
     const address = email.trim()
     if (!address || !password) return
     if (signingUp && password !== confirmPassword) {
-      setError('Passwords do not match.')
+      setError(t('auth.passwordMismatch'))
       return
     }
     if (signingUp && password.length < 6) {
-      setError('Choose a password with at least 6 characters.')
+      setError(t('auth.passwordTooShort'))
       return
     }
 
@@ -42,19 +46,24 @@ export default function Auth() {
     try {
       const supabase = requireSupabase()
       const result = signingUp
-        ? await supabase.auth.signUp({ email: address, password })
+        ? await supabase.auth.signUp({
+            email: address,
+            password,
+            // The database trigger reads this to create the profile already set
+            // to the right language, so the first screen after sign-up is
+            // never in the wrong one.
+            options: { data: { language } },
+          })
         : await supabase.auth.signInWithPassword({ email: address, password })
       if (result.error) throw new Error(result.error.message)
 
       // If email confirmation is enabled in Supabase, no session is returned.
       // Explain the configuration issue clearly instead of leaving the form idle.
       if (signingUp && !result.data.session) {
-        throw new Error(
-          'Account created, but email confirmation is enabled. Disable “Confirm email” in Supabase Auth settings to allow immediate password sign-in.',
-        )
+        throw new Error(t('auth.confirmEmailError'))
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not continue. Please try again.')
+      setError(err instanceof Error ? err.message : t('auth.genericError'))
     } finally {
       setSubmitting(false)
     }
@@ -81,7 +90,7 @@ export default function Auth() {
               !signingUp ? 'bg-violet text-white shadow-sm' : 'text-fg-muted hover:text-fg'
             }`}
           >
-            Sign in
+            {t('auth.signIn')}
           </button>
           <button
             type="button"
@@ -90,21 +99,48 @@ export default function Auth() {
               signingUp ? 'bg-violet text-white shadow-sm' : 'text-fg-muted hover:text-fg'
             }`}
           >
-            Create account
+            {t('auth.createAccount')}
           </button>
         </div>
 
-        <h1 className="text-lg font-semibold">{signingUp ? 'Create your account' : 'Welcome back'}</h1>
+        <h1 className="text-lg font-semibold">
+          {signingUp ? t('auth.createTitle') : t('auth.welcomeBack')}
+        </h1>
         <p className="mt-1.5 text-sm leading-relaxed text-fg-muted">
-          {signingUp
-            ? 'Create an account to keep your English practice in sync across devices.'
-            : 'Sign in to continue practising and keep your progress synced.'}
+          {signingUp ? t('auth.createBlurb') : t('auth.signInBlurb')}
         </p>
 
         <form className="mt-5 space-y-4" onSubmit={submit}>
+          {signingUp && (
+            <div>
+              <span className="mb-1.5 block text-sm text-fg-muted">
+                {t('auth.languageQuestion')}
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {LEARNING_LANGUAGES.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => previewLanguage(option)}
+                    aria-pressed={language === option}
+                    className={cn(
+                      'rounded-xl border px-3 py-3 text-sm font-semibold transition',
+                      language === option
+                        ? 'border-violet/40 bg-violet/15 text-fg'
+                        : 'border-white/10 bg-white/5 text-fg-muted hover:bg-white/10',
+                    )}
+                  >
+                    {LANGUAGE_NAME[option]}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-xs text-fg-faint">{t('auth.languageHint')}</p>
+            </div>
+          )}
+
           <div>
             <label htmlFor="email" className="mb-1.5 block text-sm text-fg-muted">
-              Email address
+              {t('auth.email')}
             </label>
             <input
               id="email"
@@ -120,7 +156,7 @@ export default function Auth() {
 
           <div>
             <label htmlFor="password" className="mb-1.5 block text-sm text-fg-muted">
-              Password
+              {t('auth.password')}
             </label>
             <input
               id="password"
@@ -137,7 +173,7 @@ export default function Auth() {
           {signingUp && (
             <div>
               <label htmlFor="confirm-password" className="mb-1.5 block text-sm text-fg-muted">
-                Confirm password
+                {t('auth.confirmPassword')}
               </label>
               <input
                 id="confirm-password"
@@ -158,24 +194,24 @@ export default function Auth() {
             {submitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                {signingUp ? 'Creating account...' : 'Signing in...'}
+                {signingUp ? t('auth.creating') : t('auth.signingIn')}
               </>
             ) : signingUp ? (
               <>
                 <UserPlus className="size-4" />
-                Create account
+                {t('auth.createAccount')}
               </>
             ) : (
               <>
                 <LogIn className="size-4" />
-                Sign in
+                {t('auth.signIn')}
               </>
             )}
           </Button>
         </form>
 
         <p className="mt-5 flex items-center justify-center gap-1.5 text-xs text-fg-faint">
-          <LockKeyhole className="size-3.5" /> Your password is securely handled by Supabase.
+          <LockKeyhole className="size-3.5" /> {t('auth.securedBy')}
         </p>
       </Card>
     </main>

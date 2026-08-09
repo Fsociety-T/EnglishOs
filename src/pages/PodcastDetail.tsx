@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, BookmarkPlus, Check, ExternalLink, Plus, Trash2 } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, SectionHeading, Spinner, Tabs } from '@/components/ui'
+import { useLanguage } from '@/i18n'
 import { useAsync } from '@/hooks/useAsync'
 import { formatTimestamp, parseMediaUrl } from '@/lib/media'
 import { newId } from '@/lib/utils'
@@ -18,6 +19,7 @@ export default function PodcastDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const repo = useRepo()
+  const { language } = useLanguage()
 
   const [noteText, setNoteText] = useState('')
   const [stampMinutes, setStampMinutes] = useState('')
@@ -88,6 +90,7 @@ export default function PodcastDetail() {
     const word = firstLine.split(/\s+/).slice(0, 3).join(' ')
     await repo.addWord({
       id: newId(),
+      language,
       word,
       definition: note,
       example: '',

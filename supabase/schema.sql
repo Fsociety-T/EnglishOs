@@ -12,16 +12,20 @@
 create table if not exists public.profiles (
   id                  uuid primary key references auth.users on delete cascade,
   display_name        text        not null default 'Learner',
+  -- The language being learned. Also the language the interface speaks.
+  language            text        not null default 'en' check (language in ('en','fr')),
   level               text        not null default 'B1'
                         check (level in ('A1','A2','B1','B2','C1','C2')),
   daily_goal_minutes  integer     not null default 20 check (daily_goal_minutes between 1 and 600),
   created_at          timestamptz not null default now()
 );
 
+
 -- ---------------------------------------------------------------- sessions --
 create table if not exists public.sessions (
   id                uuid primary key default gen_random_uuid(),
   user_id           uuid        not null references auth.users on delete cascade,
+  language          text        not null default 'en' check (language in ('en','fr')),
   kind              text        not null check (kind in ('writing','speaking')),
   topic_title       text        not null,
   prompt            text        not null default '',
@@ -46,6 +50,7 @@ create index if not exists sessions_user_created_idx
 create table if not exists public.lessons (
   id                 uuid primary key default gen_random_uuid(),
   user_id            uuid        not null references auth.users on delete cascade,
+  language           text        not null default 'en' check (language in ('en','fr')),
   error_type         text        not null,
   title              text        not null,
   body               text        not null default '',
@@ -63,6 +68,7 @@ create index if not exists lessons_user_idx on public.lessons (user_id, created_
 create table if not exists public.vocabulary (
   id              uuid primary key default gen_random_uuid(),
   user_id         uuid        not null references auth.users on delete cascade,
+  language        text        not null default 'en' check (language in ('en','fr')),
   word            text        not null,
   phonetic        text,
   part_of_speech  text,
@@ -75,8 +81,9 @@ create table if not exists public.vocabulary (
   srs_box         smallint    not null default 1 check (srs_box between 1 and 5),
   next_review_at  timestamptz not null default now(),
   created_at      timestamptz not null default now(),
-  -- The same word twice in one notebook is always a mistake, never intent.
-  unique (user_id, word)
+  -- The same word twice in one notebook is always a mistake, never intent -
+  -- but "important" as an English word and as a French word are two entries.
+  unique (user_id, language, word)
 );
 create index if not exists vocabulary_due_idx on public.vocabulary (user_id, next_review_at);
 
@@ -119,6 +126,56 @@ create table if not exists public.daily_stats (
   primary key (user_id, day)
 );
 
+-- ------------------------------------------------- language backfill (v2) --
+-- The language columns arrived with the French version, after the first
+-- release. `create table if not exists` above does nothing to a table that
+-- already exists, so existing projects get the columns here instead.
+-- Defaulting to 'en' leaves every account created before French exactly where
+-- it was: their history stays English and stays visible.
+do $$
+begin
+  alter table public.sessions   add column if not exists language text not null default 'en';
+  alter table public.lessons    add column if not exists language text not null default 'en';
+  alter table public.vocabulary add column if not exists language text not null default 'en';
+
+  -- Vocabulary was unique on (user_id, word). It has to become
+  -- (user_id, language, word), or a French word could never be saved
+  -- alongside the identically spelled English one.
+  if exists (
+    select 1 from pg_constraint
+    where conname = 'vocabulary_user_id_word_key'
+      and conrelid = 'public.vocabulary'::regclass
+  ) then
+    alter table public.vocabulary drop constraint vocabulary_user_id_word_key;
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'vocabulary_user_id_language_word_key'
+      and conrelid = 'public.vocabulary'::regclass
+  ) then
+    alter table public.vocabulary
+      add constraint vocabulary_user_id_language_word_key unique (user_id, language, word);
+  end if;
+end $$;
+
+-- Check constraints are added separately: each is skipped if already present.
+do $$
+declare
+  t text;
+begin
+  for t in select unnest(array['profiles','sessions','lessons','vocabulary'])
+  loop
+    begin
+      execute format(
+        'alter table public.%I add constraint %I check (language in (''en'',''fr''))',
+        t, t || '_language_check');
+    exception
+      when duplicate_object then null;
+    end;
+  end loop;
+end $$;
+
 -- ------------------------------------------------------ row level security --
 alter table public.profiles      enable row level security;
 alter table public.sessions      enable row level security;
@@ -156,9 +213,18 @@ returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
+declare
+  chosen text := new.raw_user_meta_data ->> 'language';
 begin
-  insert into public.profiles (id, display_name)
-  values (new.id, coalesce(split_part(new.email, '@', 1), 'Learner'))
+  -- The sign-up form sends the chosen language as user metadata. Anything
+  -- unexpected falls back to English rather than failing the check constraint
+  -- and blocking the account from being created at all.
+  if chosen is null or chosen not in ('en', 'fr') then
+    chosen := 'en';
+  end if;
+
+  insert into public.profiles (id, display_name, language)
+  values (new.id, coalesce(split_part(new.email, '@', 1), 'Learner'), chosen)
   on conflict (id) do nothing;
   return new;
 end $$;

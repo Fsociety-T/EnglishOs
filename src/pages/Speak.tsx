@@ -4,8 +4,9 @@ import { ArrowLeft, AlertTriangle, Loader2, Mic, Shuffle, Sparkles, Square } fro
 import { Badge, Button, Card, SectionHeading, Tabs } from '@/components/ui'
 import { useAudioRecorder } from '@/hooks/useAudioRecorder'
 import { speechRecognitionSupported, useSpeechRecognition } from '@/hooks/useSpeechRecognition'
-import { TOPICS, TOPIC_CATEGORIES, randomTopic } from '@/data/topics'
+import { randomTopic, topicCategoriesFor, topicsFor } from '@/data/topics'
 import { computeFluencyMetrics, countWords } from '@/lib/text'
+import { useLanguage } from '@/i18n'
 import { submitPractice } from '@/lib/session'
 import { cn, formatDuration } from '@/lib/utils'
 import type { Topic } from '@/types'
@@ -29,6 +30,7 @@ function Waveform({ levels, active }: { levels: number[]; active: boolean }) {
 
 export default function Speak() {
   const navigate = useNavigate()
+  const { language } = useLanguage()
   const [topic, setTopic] = useState<Topic | null>(null)
   const [category, setCategory] = useState('All')
   const [submitting, setSubmitting] = useState(false)
@@ -43,9 +45,10 @@ export default function Speak() {
   const finalTranscript = finished ? editedTranscript : liveTranscript
   const wordCount = countWords(finalTranscript)
 
+  const allTopics = useMemo(() => topicsFor(language), [language])
   const visibleTopics = useMemo(
-    () => (category === 'All' ? TOPICS : TOPICS.filter((t) => t.category === category)),
-    [category],
+    () => (category === 'All' ? allTopics : allTopics.filter((t) => t.category === category)),
+    [allTopics, category],
   )
 
   // Keep the editable copy in sync until the learner stops and takes over.
@@ -253,7 +256,7 @@ export default function Speak() {
           <p className="font-medium text-fg">Not sure what to talk about?</p>
           <p className="mt-0.5 text-sm text-fg-faint">Let the app pick one for you.</p>
         </div>
-        <Button onClick={() => setTopic(randomTopic())}>
+        <Button onClick={() => setTopic(randomTopic(language))}>
           <Shuffle className="size-4" />
           Surprise me
         </Button>
@@ -263,11 +266,11 @@ export default function Speak() {
         <SectionHeading title="Choose a topic" />
         <Tabs
           tabs={[
-            { id: 'All', label: 'All', count: TOPICS.length },
-            ...TOPIC_CATEGORIES.map((c) => ({
+            { id: 'All', label: 'All', count: allTopics.length },
+            ...topicCategoriesFor(language).map((c) => ({
               id: c,
               label: c,
-              count: TOPICS.filter((t) => t.category === c).length,
+              count: allTopics.filter((t) => t.category === c).length,
             })),
           ]}
           active={category}

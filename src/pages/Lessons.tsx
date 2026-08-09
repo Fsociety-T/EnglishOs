@@ -2,25 +2,25 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, GraduationCap, PenLine, Target } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, SectionHeading, Spinner, Tabs } from '@/components/ui'
-import { useAsync } from '@/hooks/useAsync'
+import { useLanguage } from '@/i18n'
+import { useLessons, useSessions } from '@/hooks/useContent'
 import { ERROR_TONE } from '@/lib/errorStyles'
 import { cn } from '@/lib/utils'
-import { useRepo } from '@/services/db'
-import type { LessonStatus } from '@/types'
+import type { ErrorType, LessonStatus } from '@/types'
 import { ERROR_TYPE_LABEL } from '@/types'
 
 type Filter = 'all' | LessonStatus
 
 export default function Lessons() {
-  const repo = useRepo()
+  const { language } = useLanguage()
   const [filter, setFilter] = useState<Filter>('all')
 
-  const { data: lessons, loading } = useAsync(() => repo.listLessons(), [])
-  const { data: sessions } = useAsync(() => repo.listSessions(), [])
+  const { data: lessons, loading } = useLessons()
+  const { data: sessions } = useSessions()
 
   /** How often each mistake actually happens, across every session. */
   const weakAreas = useMemo(() => {
-    const counts = new Map<string, number>()
+    const counts = new Map<ErrorType, number>()
     for (const session of sessions ?? []) {
       for (const correction of session.corrections) {
         counts.set(correction.errorType, (counts.get(correction.errorType) ?? 0) + 1)
@@ -58,7 +58,7 @@ export default function Lessons() {
               <div key={type}>
                 <div className="flex items-baseline justify-between text-sm">
                   <span className="text-fg-muted">
-                    {ERROR_TYPE_LABEL[type as keyof typeof ERROR_TYPE_LABEL]}
+                    {ERROR_TYPE_LABEL[language][type]}
                   </span>
                   <span className="text-fg-faint">
                     {count} {count === 1 ? 'time' : 'times'}
@@ -122,7 +122,7 @@ export default function Lessons() {
                         ERROR_TONE[lesson.errorType].chip,
                       )}
                     >
-                      {ERROR_TYPE_LABEL[lesson.errorType]}
+                      {ERROR_TYPE_LABEL[language][lesson.errorType]}
                     </span>
                     {lesson.status === 'mastered' ? (
                       <Badge tone="good">

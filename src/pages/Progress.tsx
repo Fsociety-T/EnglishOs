@@ -9,6 +9,8 @@ import {
   TrendArea,
 } from '@/components/charts'
 import { Button, Card, EmptyState, StatTile, Spinner } from '@/components/ui'
+import { useLanguage } from '@/i18n'
+import { useSessions, useVocabulary } from '@/hooks/useContent'
 import { useAsync } from '@/hooks/useAsync'
 import { computeStreak } from '@/lib/streak'
 import { useRepo } from '@/services/db'
@@ -21,11 +23,12 @@ function shortDate(iso: string): string {
 
 export default function Progress() {
   const repo = useRepo()
+  const { language } = useLanguage()
   const [showTable, setShowTable] = useState(false)
 
   const { data: stats, loading } = useAsync(() => repo.listDailyStats(), [])
-  const { data: sessions } = useAsync(() => repo.listSessions(), [])
-  const { data: vocabulary } = useAsync(() => repo.listVocabulary(), [])
+  const { data: sessions } = useSessions()
+  const { data: vocabulary } = useVocabulary()
 
   const allStats = useMemo(() => stats ?? [], [stats])
   const allSessions = useMemo(
@@ -77,7 +80,7 @@ export default function Progress() {
     return [...counts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)
-      .map(([type, count]) => ({ label: ERROR_TYPE_LABEL[type], value: count }))
+      .map(([type, count]) => ({ label: ERROR_TYPE_LABEL[language][type], value: count }))
   }, [allSessions])
 
   const heatmapDays = useMemo(

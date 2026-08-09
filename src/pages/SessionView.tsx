@@ -13,6 +13,8 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { Badge, Button, Card, ProgressRing, SectionHeading, Spinner, Tabs } from '@/components/ui'
+import { useLanguage } from '@/i18n'
+import { useLessons } from '@/hooks/useContent'
 import { useAsync } from '@/hooks/useAsync'
 import { ERROR_TONE, SEVERITY_LABEL, scoreTone } from '@/lib/errorStyles'
 import { cn, formatDuration, formatRelative, newId } from '@/lib/utils'
@@ -72,6 +74,7 @@ export default function SessionView() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const repo = useRepo()
+  const { language } = useLanguage()
 
   const [view, setView] = useState<'yours' | 'corrected'>('yours')
   const [selected, setSelected] = useState<Correction | null>(null)
@@ -81,9 +84,9 @@ export default function SessionView() {
     () => (id ? repo.getSession(id) : Promise.resolve(null)),
     [id],
   )
-  const { data: lessons } = useAsync(() => repo.listLessons(), [id])
+  const { data: lessons } = useLessons([id])
   const { data: suggestions } = useAsync(
-    () => (session ? ai.suggestVocabulary({ text: session.content, level: 'B1' }) : Promise.resolve([])),
+    () => (session ? ai.suggestVocabulary({ text: session.content, level: 'B1', language: session.language }) : Promise.resolve([])),
     [session?.id],
   )
 
@@ -112,6 +115,7 @@ export default function SessionView() {
     if (savedWords.has(word.word)) return
     await repo.addWord({
       id: newId(),
+      language,
       word: word.word,
       phonetic: word.phonetic,
       partOfSpeech: word.partOfSpeech,
@@ -288,9 +292,9 @@ export default function SessionView() {
                   ERROR_TONE[selected.errorType].chip,
                 )}
               >
-                {ERROR_TYPE_LABEL[selected.errorType]}
+                {ERROR_TYPE_LABEL[language][selected.errorType]}
               </span>
-              <Badge>{SEVERITY_LABEL[selected.severity]}</Badge>
+              <Badge>{SEVERITY_LABEL[language][selected.severity]}</Badge>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2 font-mono text-sm">
               <span className="rounded bg-bad/15 px-2 py-1 text-bad line-through">
@@ -320,7 +324,7 @@ export default function SessionView() {
                         ERROR_TONE[correction.errorType].chip,
                       )}
                     >
-                      {ERROR_TYPE_LABEL[correction.errorType]}
+                      {ERROR_TYPE_LABEL[language][correction.errorType]}
                     </span>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-sm">
@@ -390,7 +394,7 @@ export default function SessionView() {
                   </span>
                   <p className="mt-3 font-medium text-fg">{lesson.title}</p>
                   <p className="mt-1 text-sm text-fg-faint">
-                    {ERROR_TYPE_LABEL[lesson.errorType]} &middot; {lesson.exercises.length} questions
+                    {ERROR_TYPE_LABEL[language][lesson.errorType]} &middot; {lesson.exercises.length} questions
                   </p>
                 </Card>
               </Link>

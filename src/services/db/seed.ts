@@ -1,5 +1,5 @@
 import type { Store } from './demoRepo'
-import { LESSON_LIBRARY } from '@/services/ai/lessonLibrary'
+import { lessonTemplate } from '@/services/ai/lessonLibrary'
 import { localDay, newId } from '@/lib/utils'
 import { countWords } from '@/lib/text'
 
@@ -102,6 +102,7 @@ export function seedStore(store: Store): Store {
   store.sessions = [
     {
       id: sessionId,
+      language: 'en' as const,
       kind: 'writing',
       topicTitle: 'A place you visited recently',
       prompt: 'Describe a place you went to recently. Who were you with, and what happened?',
@@ -122,9 +123,10 @@ export function seedStore(store: Store): Store {
   ]
 
   store.lessons = (['preposition', 'subject-verb-agreement'] as const).map((errorType, i) => {
-    const template = LESSON_LIBRARY[errorType]
+    const template = lessonTemplate('en', errorType)
     return {
       id: newId(),
+      language: 'en' as const,
       errorType,
       title: template.title,
       body: template.body,
@@ -143,6 +145,7 @@ export function seedStore(store: Store): Store {
   store.vocabulary = [
     {
       id: newId(),
+      language: 'en' as const,
       word: 'crucial',
       phonetic: '/ˈkruːʃl/',
       partOfSpeech: 'adjective',
@@ -157,6 +160,7 @@ export function seedStore(store: Store): Store {
     },
     {
       id: newId(),
+      language: 'en' as const,
       word: 'gradually',
       phonetic: '/ˈɡrædʒuəli/',
       partOfSpeech: 'adverb',
@@ -170,6 +174,7 @@ export function seedStore(store: Store): Store {
     },
     {
       id: newId(),
+      language: 'en' as const,
       word: 'resilient',
       phonetic: '/rɪˈzɪliənt/',
       partOfSpeech: 'adjective',

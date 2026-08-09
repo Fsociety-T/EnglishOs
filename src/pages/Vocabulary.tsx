@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { BookMarked, Check, Layers, Plus, Trash2, X } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, SectionHeading, Spinner, Tabs } from '@/components/ui'
-import { useAsync } from '@/hooks/useAsync'
+import { useLanguage } from '@/i18n'
+import { useVocabulary } from '@/hooks/useContent'
 import { describeInterval, dueWords, isMastered, nextBox, nextReviewDate } from '@/lib/srs'
 import type { ReviewGrade } from '@/lib/srs'
 import { cn, newId } from '@/lib/utils'
@@ -12,6 +13,7 @@ type Tab = 'all' | 'due' | 'mastered'
 
 function AddWordForm({ onAdded }: { onAdded: () => void }) {
   const repo = useRepo()
+  const { language } = useLanguage()
   const [open, setOpen] = useState(false)
   const [word, setWord] = useState('')
   const [definition, setDefinition] = useState('')
@@ -23,6 +25,7 @@ function AddWordForm({ onAdded }: { onAdded: () => void }) {
     setSaving(true)
     await repo.addWord({
       id: newId(),
+      language,
       word: word.trim(),
       definition: definition.trim(),
       example: example.trim(),
@@ -199,7 +202,7 @@ export default function Vocabulary() {
   const [tab, setTab] = useState<Tab>('all')
   const [reviewing, setReviewing] = useState(false)
 
-  const { data: words, loading, reload } = useAsync(() => repo.listVocabulary(), [])
+  const { data: words, loading, reload } = useVocabulary()
   const all = useMemo(() => words ?? [], [words])
   const due = useMemo(() => dueWords(all), [all])
   const mastered = useMemo(() => all.filter(isMastered), [all])

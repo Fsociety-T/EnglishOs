@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
+import { LanguageProvider } from './i18n'
 import './index.css'
 
 const container = document.getElementById('root')
@@ -14,7 +15,9 @@ createRoot(container).render(
   <StrictMode>
     <ErrorBoundary>
       <HashRouter>
-        <App />
+        <LanguageProvider>
+          <App />
+        </LanguageProvider>
       </HashRouter>
     </ErrorBoundary>
   </StrictMode>,
