@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useLanguage } from '@/i18n'
 import { repo } from '@/services/db'
-import type { Lesson, PracticeSession, VocabWord } from '@/types'
+import type { Lesson, PracticeSession, Song, VocabWord } from '@/types'
 import { useAsync } from './useAsync'
 import type { AsyncState } from './useAsync'
 
@@ -37,4 +37,8 @@ export function useLessons(deps: unknown[] = []): AsyncState<Lesson[]> {
 
 export function useVocabulary(deps: unknown[] = []): AsyncState<VocabWord[]> {
   return useScoped(() => repo.listVocabulary(), deps)
+}
+
+export function useSongs(deps: unknown[] = []): AsyncState<Song[]> {
+  return useScoped(() => repo.listSongs(), deps)
 }

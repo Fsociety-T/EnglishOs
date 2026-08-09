@@ -13,6 +13,8 @@ import Podcasts from '@/pages/Podcasts'
 import Progress from '@/pages/Progress'
 import SessionView from '@/pages/SessionView'
 import Settings from '@/pages/Settings'
+import SongDetail from '@/pages/SongDetail'
+import Songs from '@/pages/Songs'
 import Speak from '@/pages/Speak'
 import Vocabulary from '@/pages/Vocabulary'
 import Write from '@/pages/Write'
@@ -42,6 +44,8 @@ export default function App() {
         <Route path="/lessons" element={<Lessons />} />
         <Route path="/lessons/:id" element={<LessonDetail />} />
         <Route path="/vocabulary" element={<Vocabulary />} />
+        <Route path="/songs" element={<Songs />} />
+        <Route path="/songs/:id" element={<SongDetail />} />
         <Route path="/podcasts" element={<Podcasts />} />
         <Route path="/podcasts/:id" element={<PodcastDetail />} />
         <Route path="/progress" element={<Progress />} />

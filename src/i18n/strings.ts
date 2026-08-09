@@ -25,6 +25,7 @@ const en = {
   'nav.speak': 'Speak',
   'nav.lessons': 'Lessons',
   'nav.vocabulary': 'Words',
+  'nav.songs': 'Songs',
   'nav.podcasts': 'Podcasts',
   'nav.progress': 'Progress',
   'nav.settings': 'Settings',
@@ -213,6 +214,51 @@ const en = {
   'pod.openNewTab': 'Open in a new tab',
   'pod.notePlaceholder': 'A word, a phrase, or an idea you liked...',
   'pod.addNote': 'Add note',
+
+  /* --------------------------------------------------------------- songs -- */
+  'song.loading': 'Loading your songs...',
+  'song.title': 'Learn from songs',
+  'song.subtitle':
+    'Write out the words of a song you love, tap along once to time them, and then watch them light up as it plays.',
+  'song.linkPlaceholder': 'Paste the YouTube link',
+  'song.titlePlaceholder': 'Song title',
+  'song.artistPlaceholder': 'Artist (optional)',
+  'song.add': 'Add song',
+  'song.youtubeOnly':
+    'Songs need a YouTube link. It is the only player that can tell the app where the music has reached, which is what makes the words follow along.',
+  'song.emptyTitle': 'No songs yet',
+  'song.emptyBody':
+    'Paste a YouTube link above. Then write out the words yourself - that first listen, deciding what you actually hear, is already the exercise.',
+  'song.needsWords': 'Needs the words',
+  'song.needsTiming': 'Needs timing',
+  'song.partlyTimed': '{done} of {total} timed',
+  'song.readyToSing': 'Ready',
+  'song.delete': 'Delete {title}',
+  'song.notFound': 'That song could not be found.',
+  'song.back': 'Back to songs',
+  'song.openOnYouTube': 'Open on YouTube',
+  'song.tabWords': 'Words',
+  'song.tabTiming': 'Timing',
+  'song.tabSing': 'Sing',
+  'song.wordsBlurb':
+    'Write out the song, one line per line. Type what you hear - the app does not fetch the words for you, and working them out yourself is the part that teaches you something.',
+  'song.wordsPlaceholder': 'One line of the song per line...',
+  'song.languageWarning':
+    'These words do not look like the language you are learning. They are saved anyway - just check it is the song you meant.',
+  'song.saveWords': 'Save the words',
+  'song.timingBlurb':
+    'Press play and tap Set the moment each line starts. Any line you skip simply will not light up, so you can stop whenever you like.',
+  'song.play': 'Play',
+  'song.pause': 'Pause',
+  'song.setTime': 'Set time',
+  'song.backOne': 'Back one',
+  'song.noTimingsYet': 'Nothing is timed yet, so there is nothing to follow.',
+  'song.goTiming': 'Tap the timings in',
+  'song.goWords': 'Write out the words',
+  'song.follow': 'Scroll with the song',
+  'song.singBlurb': 'Tap any word to send it to your notebook. Tap a time to jump there.',
+  'song.jumpHere': 'Play from here',
+  'song.saveWord': 'Save this word',
 
   /* ---------------------------------------------------------- vocabulary -- */
   'vocab.loading': 'Loading your words...',
@@ -469,6 +515,7 @@ const fr: Record<StringKey, string> = {
   'nav.speak': 'Parler',
   'nav.lessons': 'Leçons',
   'nav.vocabulary': 'Mots',
+  'nav.songs': 'Chansons',
   'nav.podcasts': 'Podcasts',
   'nav.progress': 'Progrès',
   'nav.settings': 'Paramètres',
@@ -665,6 +712,52 @@ const fr: Record<StringKey, string> = {
   'pod.openNewTab': 'Ouvrir dans un nouvel onglet',
   'pod.notePlaceholder': 'Un mot, une expression ou une idée qui vous a plu...',
   'pod.addNote': 'Ajouter une note',
+
+  /* --------------------------------------------------------------- songs -- */
+  'song.loading': 'Chargement de vos chansons...',
+  'song.title': 'Apprendre avec des chansons',
+  'song.subtitle':
+    'Écrivez les paroles d’une chanson que vous aimez, tapez une fois en rythme pour les caler, puis regardez-les s’allumer pendant l’écoute.',
+  'song.linkPlaceholder': 'Collez le lien YouTube',
+  'song.titlePlaceholder': 'Titre de la chanson',
+  'song.artistPlaceholder': 'Artiste (facultatif)',
+  'song.add': 'Ajouter',
+  'song.youtubeOnly':
+    'Il faut un lien YouTube. C’est le seul lecteur capable de dire à l’application où en est la musique, et c’est ce qui permet aux paroles de suivre.',
+  'song.emptyTitle': 'Aucune chanson',
+  'song.emptyBody':
+    'Collez un lien YouTube ci-dessus. Écrivez ensuite les paroles vous-même : cette première écoute, où vous décidez ce que vous entendez vraiment, est déjà l’exercice.',
+  'song.needsWords': 'Paroles à écrire',
+  'song.needsTiming': 'À caler',
+  'song.partlyTimed': '{done} sur {total} calées',
+  'song.readyToSing': 'Prête',
+  'song.delete': 'Supprimer {title}',
+  'song.notFound': 'Cette chanson est introuvable.',
+  'song.back': 'Retour aux chansons',
+  'song.openOnYouTube': 'Ouvrir sur YouTube',
+  'song.tabWords': 'Paroles',
+  'song.tabTiming': 'Calage',
+  'song.tabSing': 'Chanter',
+  'song.wordsBlurb':
+    'Écrivez la chanson, une ligne par ligne. Tapez ce que vous entendez : l’application ne va pas chercher les paroles à votre place, et les déchiffrer soi-même est justement ce qui fait progresser.',
+  'song.wordsPlaceholder': 'Une ligne de la chanson par ligne...',
+  'song.languageWarning':
+    'Ces paroles ne semblent pas être dans la langue que vous apprenez. Elles sont enregistrées quand même - vérifiez simplement que c’est la bonne chanson.',
+  'song.saveWords': 'Enregistrer les paroles',
+  'song.timingBlurb':
+    'Lancez la lecture et appuyez sur Caler au début de chaque ligne. Une ligne sautée ne s’allumera pas, vous pouvez donc vous arrêter quand vous voulez.',
+  'song.play': 'Lecture',
+  'song.pause': 'Pause',
+  'song.setTime': 'Caler',
+  'song.backOne': 'Revenir d’une',
+  'song.noTimingsYet': 'Rien n’est encore calé, il n’y a donc rien à suivre.',
+  'song.goTiming': 'Caler les paroles',
+  'song.goWords': 'Écrire les paroles',
+  'song.follow': 'Défiler avec la chanson',
+  'song.singBlurb':
+    'Touchez un mot pour l’envoyer dans votre carnet. Touchez un temps pour y aller.',
+  'song.jumpHere': 'Lire à partir d’ici',
+  'song.saveWord': 'Enregistrer ce mot',
 
   /* ---------------------------------------------------------- vocabulary -- */
   'vocab.loading': 'Chargement de vos mots...',
