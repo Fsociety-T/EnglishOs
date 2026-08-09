@@ -134,6 +134,7 @@ create table if not exists public.daily_stats (
 -- it was: their history stays English and stays visible.
 do $$
 begin
+  alter table public.profiles   add column if not exists language text not null default 'en';
   alter table public.sessions   add column if not exists language text not null default 'en';
   alter table public.lessons    add column if not exists language text not null default 'en';
   alter table public.vocabulary add column if not exists language text not null default 'en';
