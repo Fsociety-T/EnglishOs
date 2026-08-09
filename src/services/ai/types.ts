@@ -11,8 +11,15 @@ import type {
 /** A correction before it has been attached to a stored session. */
 export type CorrectionDraft = Omit<Correction, 'id' | 'sessionId'>
 
-/** A lesson before it has been stored. */
-export type LessonDraft = Omit<Lesson, 'id' | 'createdAt' | 'status'>
+/**
+ * A lesson before it has been stored. The review schedule is omitted as well
+ * as the identifiers: when a lesson comes back is the app's decision to make,
+ * never the model's.
+ */
+export type LessonDraft = Omit<
+  Lesson,
+  'id' | 'createdAt' | 'status' | 'reviewBox' | 'nextReviewAt'
+>
 
 export interface Review {
   /** The learner's text with every correction applied. */

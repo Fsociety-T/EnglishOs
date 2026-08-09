@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CheckCircle2, GraduationCap, PenLine, Target } from 'lucide-react'
+import { CheckCircle2, GraduationCap, PenLine, RotateCcw, Target } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, SectionHeading, Spinner, Tabs } from '@/components/ui'
 import { useLanguage, useT } from '@/i18n'
 import { useLessons, useSessions } from '@/hooks/useContent'
 import { ERROR_TONE } from '@/lib/errorStyles'
+import { dueLessons, isLessonDue } from '@/lib/srs'
 import { cn } from '@/lib/utils'
 import type { ErrorType, LessonStatus } from '@/types'
 import { ERROR_TYPE_LABEL } from '@/types'
 
-type Filter = 'all' | LessonStatus
+type Filter = 'all' | 'due' | LessonStatus
 
 export default function Lessons() {
   const { language } = useLanguage()
@@ -35,7 +36,9 @@ export default function Lessons() {
   }, [sessions])
 
   const all = lessons ?? []
-  const visible = filter === 'all' ? all : all.filter((l) => l.status === filter)
+  const due = dueLessons(all)
+  const visible =
+    filter === 'all' ? all : filter === 'due' ? due : all.filter((l) => l.status === filter)
 
   if (loading) return <Spinner label={t('lessons.loading')} />
 
@@ -94,6 +97,9 @@ export default function Lessons() {
           <Tabs
             tabs={[
               { id: 'all', label: t('lessons.all'), count: all.length },
+              ...(due.length > 0
+                ? [{ id: 'due' as const, label: t('lessons.due'), count: due.length }]
+                : []),
               { id: 'new', label: t('lessons.new'), count: all.filter((l) => l.status === 'new').length },
               {
                 id: 'learning',
@@ -123,7 +129,15 @@ export default function Lessons() {
                     >
                       {ERROR_TYPE_LABEL[language][lesson.errorType]}
                     </span>
-                    {lesson.status === 'mastered' ? (
+                    {/* Due beats mastered: a mastered lesson whose review has
+                        come round is the one thing on this screen worth doing
+                        today, and a green tick would say the opposite. */}
+                    {isLessonDue(lesson) ? (
+                      <Badge tone="warn">
+                        <RotateCcw className="size-3" />
+                        {t('lessons.due')}
+                      </Badge>
+                    ) : lesson.status === 'mastered' ? (
                       <Badge tone="good">
                         <CheckCircle2 className="size-3" />
                         {t('lessons.mastered')}

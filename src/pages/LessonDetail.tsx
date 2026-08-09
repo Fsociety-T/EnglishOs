@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, RotateCcw, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, Lightbulb, RotateCcw, X } from 'lucide-react'
 import Prose from '@/components/Prose'
 import { Badge, Button, Card, SectionHeading, Spinner } from '@/components/ui'
 import { useLanguage, useT } from '@/i18n'
 import { useAsync } from '@/hooks/useAsync'
 import { ERROR_TONE } from '@/lib/errorStyles'
+import { describeInterval, lessonProgressAfterQuiz } from '@/lib/srs'
 import { cn } from '@/lib/utils'
 import { useRepo } from '@/services/db'
 import { ERROR_TYPE_LABEL } from '@/types'
@@ -64,9 +65,9 @@ export default function LessonDetail() {
     if (lesson && nextIndex >= lesson.exercises.length) {
       const finalRatio =
         lesson.exercises.length > 0 ? answers.filter(Boolean).length / lesson.exercises.length : 0
-      const status = finalRatio >= MASTERY_THRESHOLD ? 'mastered' : 'learning'
-      await repo.setLessonStatus(lesson.id, status)
-      if (status === 'mastered') await repo.recordActivity({ lessonsCompleted: 1 })
+      const progress = lessonProgressAfterQuiz(lesson, finalRatio >= MASTERY_THRESHOLD)
+      await repo.saveLessonProgress(lesson.id, progress)
+      if (progress.status === 'mastered') await repo.recordActivity({ lessonsCompleted: 1 })
       reload()
     }
   }
@@ -120,6 +121,19 @@ export default function LessonDetail() {
         </Card>
       )}
 
+      {/* The hook comes before the explanation, not after it. It is the part
+          that survives the week, so it should not be buried at the bottom of
+          three paragraphs nobody re-reads. */}
+      {lesson.memoryHook && (
+        <Card className="border-cyan/30 bg-cyan/5">
+          <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-cyan-soft uppercase">
+            <Lightbulb className="size-3.5" />
+            {t('lesson.rememberIt')}
+          </p>
+          <p className="mt-2 text-lg leading-relaxed font-medium text-fg">{lesson.memoryHook}</p>
+        </Card>
+      )}
+
       <Card>
         <Prose text={lesson.body} />
       </Card>
@@ -170,6 +184,9 @@ export default function LessonDetail() {
             </p>
             <p className="mt-3 leading-relaxed text-fg-muted">
               {ratio >= MASTERY_THRESHOLD ? t('lesson.passed') : t('lesson.failed')}
+            </p>
+            <p className="mt-2 text-sm text-fg-faint">
+              {t('lesson.comesBack', { when: describeInterval(lesson.reviewBox, t) })}
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-3">
               <Button onClick={restart} variant="outline">

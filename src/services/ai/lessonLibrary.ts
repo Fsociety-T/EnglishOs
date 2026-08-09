@@ -3,6 +3,8 @@ import type { ErrorType, LearningLanguage } from '@/types'
 export interface LessonTemplate {
   title: string
   body: string
+  /** One sentence to remember it by. See Lesson.memoryHook. */
+  memoryHook: string
   examples: { wrong: string; right: string; note?: string }[]
   exercises: { question: string; choices: string[]; answerIndex: number; explanation: string }[]
 }
@@ -15,6 +17,7 @@ export interface LessonTemplate {
 const EN_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
   'verb-tense': {
     title: 'Choosing the right verb tense',
+    memoryHook: 'Time gets marked once. If did, didn’t or can has already marked it, the next verb goes back to plain: didn’t go, never didn’t went.',
     body: 'English marks time on the verb, and each tense has one job.\n\n**Present simple** is for habits and facts: *I work every day.*\n**Past simple** is for finished actions with a finished time: *I worked yesterday.*\n**Present perfect** connects the past to now: *I have worked here for three years.*\n\nThe trap that catches most learners: after **did**, **didn\'t** or a modal like **can**, the verb goes back to its base form. The time is already marked once, so it is not marked twice.',
     examples: [
       { wrong: 'I didn\'t went to work.', right: 'I didn\'t go to work.', note: '"Did" already shows past, so "go" stays in base form.' },
@@ -32,6 +35,7 @@ const EN_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   article: {
     title: 'A, an and the',
+    memoryHook: 'Trust your ear, not your eye: an hour, a university. The sound picks the article; the spelling never does.',
     body: 'Three questions decide the article.\n\n**Is it the first time you mention it?** Use *a* or *an*: *I saw a dog.*\n**Does the listener already know which one?** Use *the*: *The dog was barking.*\n**Is it a general plural or uncountable idea?** Use no article: *Dogs are loyal. Water is free.*\n\nThe choice between *a* and *an* follows the **sound**, not the letter: *an hour* (silent h), *a university* (sounds like "yu").',
     examples: [
       { wrong: 'I want to be a engineer.', right: 'I want to be an engineer.', note: '"Engineer" starts with a vowel sound.' },
@@ -49,6 +53,7 @@ const EN_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   preposition: {
     title: 'Prepositions that come as fixed pairs',
+    memoryHook: 'Never translate a preposition - learn the pair. Depend on is one word that happens to have a space in it.',
     body: 'Most preposition mistakes are not logic mistakes. Many verbs and adjectives simply come glued to one preposition, and the pair has to be memorised as a single unit.\n\nThe most useful ones: **depend on**, **good at**, **interested in**, **married to**, **responsible for**, **listen to**, **arrive at/in**, **afraid of**.\n\nFor time: **at** a clock time, **on** a day, **in** a month or year. The unit gets bigger as the word gets longer: at 7pm → on Monday → in June.',
     examples: [
       { wrong: 'It depends of the weather.', right: 'It depends on the weather.' },
@@ -66,6 +71,7 @@ const EN_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   'subject-verb-agreement': {
     title: 'Making the verb match the subject',
+    memoryHook: 'If you could say he, she or it, hand the s to the verb. Everybody else keeps it.',
     body: 'In the present simple, **he**, **she** and **it** add **-s** to the verb. Everything else does not.\n\n*I work / you work / **he works** / we work / they work*\n\nSpelling details: verbs ending in -ch, -sh, -ss, -x or -o add **-es** (*watches, goes*), and a consonant + -y becomes **-ies** (*study → studies*).\n\nWatch out for words that look singular but are plural: **people**, **children**, **police** all take *are*.',
     examples: [
       { wrong: 'He go to work by bus.', right: 'He goes to work by bus.' },
@@ -83,6 +89,7 @@ const EN_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   plural: {
     title: 'Countable, uncountable and irregular plurals',
+    memoryHook: 'If you cannot put a number in front of it, it cannot take an s. Three advices is as impossible as three waters.',
     body: 'Some English nouns cannot be counted, so they never take **-s** and never take *a/an*: **information, advice, furniture, homework, knowledge, luggage, news, research, equipment**.\n\nTo count them, add a container word: *a piece of advice*, *two pieces of information*.\n\nA few nouns are already plural and must not take another -s: **children**, **people**, **men**, **women**, **feet**, **teeth**.\n\nAnd use **many** for countable things, **much** for uncountable: *many books*, *much water*.',
     examples: [
       { wrong: 'He gave me some advices.', right: 'He gave me some advice.' },
@@ -100,6 +107,7 @@ const EN_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   'word-order': {
     title: 'Where each word goes in the sentence',
+    memoryHook: 'English keeps its meaning in the seating plan, not in the endings. Subject, verb, object - swap them and you swap who did what.',
     body: 'English word order is strict because it carries the meaning that other languages carry with endings.\n\nThe backbone is **Subject → Verb → Object**: *I (S) like (V) coffee (O).*\n\nAdjectives go **before** the noun: *a red car*, never *a car red*.\n\nAdverbs of frequency (always, often, never) go **before** the main verb but **after** "be": *She always works. She is always late.*\n\nAnd in a question, the subject and the auxiliary swap: *You are ready → Are you ready?* But in an indirect question they swap back: *I wonder if you are ready.*',
     examples: [
       { wrong: 'I like very much this book.', right: 'I like this book very much.', note: 'Do not split the verb from its object.' },
@@ -117,6 +125,7 @@ const EN_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   spelling: {
     title: 'Spelling traps worth memorising',
+    memoryHook: 'A lot is two words, always. If whole fits in the middle - a whole lot - it was never one word.',
     body: 'A short list causes most spelling errors.\n\n**Always two words:** a lot, in fact, of course, no one.\n**Always capital:** the pronoun **I**, anywhere in the sentence.\n**Doubling:** a short stressed vowel doubles the consonant before -ing or -ed: *stop → stopping*, *plan → planned*.\n**-y → -ie:** *study → studied*, *happy → happier*.\n\nAnd the classic confusions: *their / there / they\'re*, *your / you\'re*, *its / it\'s*.',
     examples: [
       { wrong: 'i think alot about it.', right: 'I think a lot about it.' },
@@ -134,6 +143,7 @@ const EN_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   collocation: {
     title: 'Words that belong together',
+    memoryHook: 'Perfect grammar can still sound wrong. You make a mistake but you do your homework: no reason, just what the language chose.',
     body: 'A collocation is a pair of words that native speakers always use together. The grammar of an alternative may be perfect and it will still sound wrong.\n\nYou **take** a photo, **make** a decision, **do** homework, **have** breakfast, **pay** attention, **tell** the truth.\n\nThe hardest three are **make**, **do** and **take**:\n**make** = create something (make a cake, make a mistake, make a decision)\n**do** = perform an activity (do homework, do the washing, do business)\n**take** = receive or carry (take a photo, take a break, take the bus)',
     examples: [
       { wrong: 'Can you make a photo of us?', right: 'Can you take a photo of us?' },
@@ -151,6 +161,7 @@ const EN_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   punctuation: {
     title: 'Punctuation that changes meaning',
+    memoryHook: 'The apostrophe has exactly two jobs: a missing letter, or someone owning something. Its owns. It’s is short for it is.',
     body: 'Every sentence starts with a **capital letter** and ends with **. ! or ?**\n\nThe **apostrophe** does two jobs, and only two: it shows a missing letter (*do not → don\'t*) or possession (*Sara\'s book*). It is never used to make a plural.\n\nA **comma** separates items in a list and marks off an introductory phrase: *After work, I went home.* It cannot join two full sentences on its own - that needs a full stop, a semicolon, or a word like *and* or *but*.',
     examples: [
       { wrong: 'i went home. it was late.', right: 'I went home. It was late.' },
@@ -168,6 +179,7 @@ const EN_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   'word-choice': {
     title: 'Choosing the word that means what you mean',
+    memoryHook: 'You say something, but you tell someone. If a person comes straight after the verb, it is tell.',
     body: 'Some pairs are close in meaning but not interchangeable, and some are simply false friends from your first language.\n\n**say / tell** — you *say something*, you *tell someone*: *He said hello. He told me a story.*\n**make / do** — make creates, do performs.\n**borrow / lend** — you *borrow from*, you *lend to*.\n**than / then** — than compares, then is time.\n\nAnd age uses **be**, not **have**: *I am 25 years old*, never *I have 25 years*.',
     examples: [
       { wrong: 'He said me the truth.', right: 'He told me the truth.', note: '"Tell" takes a person directly.' },
@@ -185,6 +197,7 @@ const EN_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   other: {
     title: 'Polishing what you already do well',
+    memoryHook: 'Sounding fluent is not more grammar, it is shorter sentences and the ordinary word. When a sentence feels heavy, cut it in two.',
     body: 'Your sentence was understandable, but a small change makes it sound more natural to a native speaker.\n\nThe fastest way to sound fluent is not more grammar. It is **shorter sentences**, **stronger verbs**, and **fewer filler words**.\n\nCompare: *I made a decision to do an improvement of my English* → *I decided to improve my English.* Same meaning, half the words, twice as clear.',
     examples: [
       { wrong: 'I made a decision to go.', right: 'I decided to go.', note: 'Use the strong verb instead of verb + noun.' },
@@ -210,6 +223,7 @@ const EN_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 const FR_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
   'gender-agreement': {
     title: 'L’accord en genre et en nombre',
+    memoryHook: 'L’adjectif suit le nom comme son ombre : si le nom passe au féminin ou au pluriel, l’adjectif suit sans discuter.',
     body: 'En français, l’adjectif s’accorde avec le nom : il change de forme selon que le nom est masculin ou féminin, singulier ou pluriel.\n\n**Règle de base** : féminin → on ajoute **-e**, pluriel → on ajoute **-s**.\n*un petit chat → une petite chatte → des petits chats → des petites chattes*\n\nLe participe passé avec **être** s’accorde aussi avec le sujet : *elle est partie*, *ils sont partis*.\n\nAvec **avoir**, il ne s’accorde pas avec le sujet — sauf si le complément d’objet direct est placé **avant** le verbe : *la lettre que j’ai écrite*.',
     examples: [
       { wrong: 'une maison blanc', right: 'une maison blanche', note: '« Maison » est féminin, donc l’adjectif prend la forme féminine.' },
@@ -227,6 +241,7 @@ const FR_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   accent: {
     title: 'Les accents qui changent le sens',
+    memoryHook: 'Remplacez par « avait » : si la phrase tient debout, c’est a sans accent ; sinon, c’est à.',
     body: 'En français, un accent n’est pas une décoration : il change la prononciation et parfois le mot entier.\n\n**a / à** — *a* est le verbe avoir, *à* est une préposition : *Il **a** faim. Il va **à** Paris.*\n**ou / où** — *ou* propose un choix, *où* indique un lieu : *Café **ou** thé ? **Où** es-tu ?*\n**la / là** — *la* est un article, *là* indique un endroit.\n\nL’accent aigu **é** se prononce fermé (*été*), l’accent grave **è** se prononce ouvert (*mère*). La terminaison **-er** de l’infinitif se prononce comme *-é*, ce qui explique la confusion entre *manger* et *mangé*.',
     examples: [
       { wrong: 'Il va a la maison.', right: 'Il va à la maison.', note: '« à » préposition prend un accent grave.' },
@@ -244,6 +259,7 @@ const FR_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   'verb-tense': {
     title: 'Choisir le bon temps du verbe',
+    memoryHook: 'L’imparfait, c’est le décor ; le passé composé, c’est ce qui arrive dedans. Il pleuvait quand je suis sorti.',
     body: 'Le français distingue nettement deux passés, et c’est là que se joue la plupart des erreurs.\n\n**Passé composé** : une action terminée, un événement précis. *Hier, j’**ai mangé** au restaurant.*\n**Imparfait** : une description, une habitude, un décor. *Quand j’**étais** petit, je **mangeais** chez ma grand-mère.*\n\nUn bon test : si on peut dire « et puis », c’est le passé composé. Si on décrit comment c’était, c’est l’imparfait.\n\nLe **futur proche** (*je vais partir*) est plus courant à l’oral que le futur simple (*je partirai*).',
     examples: [
       { wrong: 'Hier je mangeais au restaurant à midi.', right: 'Hier j’ai mangé au restaurant à midi.', note: 'Un moment précis et terminé : passé composé.' },
@@ -261,6 +277,7 @@ const FR_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   article: {
     title: 'Les articles : le, la, les, un, une, du',
+    memoryHook: 'En français, presque rien ne sort tout nu. Là où l’anglais dit I like coffee, le français met le café.',
     body: 'Le français met un article presque partout où l’anglais le supprime.\n\n**Défini** (le, la, les) : une chose connue, ou une généralité. *J’aime **le** café.*\n**Indéfini** (un, une, des) : une chose parmi d’autres. *J’ai bu **un** café.*\n**Partitif** (du, de la, des) : une quantité non comptée. *Je bois **du** café.*\n\nAprès une négation, l’article indéfini et le partitif deviennent **de** : *Je n’ai pas **de** café.*\n\nEt les articles se contractent : *à + le = **au***, *de + le = **du***.',
     examples: [
       { wrong: 'J’aime café.', right: 'J’aime le café.', note: 'Une généralité prend l’article défini.' },
@@ -278,6 +295,7 @@ const FR_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   'subject-verb-agreement': {
     title: 'Conjuguer le verbe avec son sujet',
+    memoryHook: 'Parle, parles et parlent se prononcent pareil : votre oreille ne vous sauvera pas, seul le sujet décide de la fin.',
     body: 'Chaque personne a sa terminaison, et beaucoup se prononcent pareil sans s’écrire pareil : *je parl**e***, *tu parl**es***, *il parl**e***, *ils parl**ent*** se disent tous de la même façon.\n\nC’est pour cela que l’erreur passe inaperçue à l’oral et saute aux yeux à l’écrit.\n\n**Verbes en -er** : -e, -es, -e, -ons, -ez, -ent.\n**être** : suis, es, est, sommes, êtes, sont.\n**avoir** : ai, as, a, avons, avez, ont.\n**aller** : vais, vas, va, allons, allez, vont.\n\nQuand le sujet est éloigné du verbe, revenez au sujet réel : *Les enfants de mon voisin **jouent*** — le sujet est *les enfants*, pas *mon voisin*.',
     examples: [
       { wrong: 'Ils mange à midi.', right: 'Ils mangent à midi.', note: '3e personne du pluriel : -ent.' },
@@ -295,6 +313,7 @@ const FR_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   preposition: {
     title: 'Les prépositions de lieu et de temps',
+    memoryHook: 'Les prépositions s’apprennent par blocs, jamais par traduction : en France, au Japon, aux États-Unis.',
     body: 'Les prépositions ne se traduisent presque jamais mot à mot. Elles s’apprennent par blocs.\n\n**Pays** : *en* France (féminin), *au* Japon (masculin), *aux* États-Unis (pluriel).\n**Villes** : *à* Paris.\n**Temps** : *depuis* (encore vrai), *pendant* (durée finie), *il y a* (moment passé).\n*Je vis ici **depuis** 2020. J’ai vécu à Lyon **pendant** deux ans. Je suis arrivé **il y a** un mois.*\n\nEt certains verbes imposent leur préposition : *penser **à***, *parler **de***, *commencer **à***, *essayer **de***.',
     examples: [
       { wrong: 'Je vais à France.', right: 'Je vais en France.', note: 'Pays féminin : en.' },
@@ -312,6 +331,7 @@ const FR_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   'word-order': {
     title: 'L’ordre des mots en français',
+    memoryHook: 'En français, l’adjectif marche derrière le nom : une voiture rouge, jamais une rouge voiture.',
     body: 'L’ordre de base est **Sujet → Verbe → Complément**, comme en anglais. Trois choses le distinguent.\n\n**L’adjectif se place après le nom** dans la plupart des cas : *une voiture rouge*, pas *une rouge voiture*. Quelques adjectifs courts et courants passent devant : *un **grand** homme*, *une **belle** journée*, *un **petit** problème*.\n\n**Le pronom complément passe avant le verbe** : *Je **le** vois*, pas *Je vois le*.\n\n**La négation encadre le verbe** : *Je **ne** mange **pas***. Aux temps composés, elle encadre l’auxiliaire : *Je **n’**ai **pas** mangé*.',
     examples: [
       { wrong: 'une rouge voiture', right: 'une voiture rouge', note: 'La couleur se place après le nom.' },
@@ -329,6 +349,7 @@ const FR_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   plural: {
     title: 'Former le pluriel',
+    memoryHook: 'Le s du pluriel ne s’entend pas. C’est le petit mot devant - un ou des - qui dit combien il y en a.',
     body: 'Le pluriel régulier ajoute un **-s** qui ne se prononce pas : *un livre → des livres*.\n\nLes exceptions se rangent par terminaison :\n**-al → -aux** : *un journal → des journaux*, *un cheval → des chevaux*.\n**-eau, -au, -eu → -x** : *un bateau → des bateaux*, *un jeu → des jeux*.\n**-s, -x, -z** : ne changent pas : *un pays → des pays*.\n\nComme le *-s* est muet, c’est l’article qui s’entend : *le livre* / *les livres*. À l’écrit, il faut accorder tout ce qui suit.',
     examples: [
       { wrong: 'des journals', right: 'des journaux', note: '-al devient -aux.' },
@@ -346,6 +367,7 @@ const FR_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   spelling: {
     title: 'Les pièges d’orthographe courants',
+    memoryHook: 'Ce montre du doigt, se revient vers le sujet. Si vous pouvez ajouter « -là », c’est ce.',
     body: 'Certaines confusions reviennent dans presque tous les textes.\n\n**ce / se** — *ce* montre (*ce livre*), *se* est réfléchi (*il se lave*).\n**ces / ses** — *ces* montre plusieurs choses, *ses* indique la possession.\n**c’est / s’est** — *c’est* = cela est, *s’est* accompagne un verbe pronominal.\n**leur / leurs** — devant un verbe, *leur* ne prend jamais de -s.\n\nEt les doubles consonnes s’apprennent mot par mot : *apparaître*, *développer*, *professionnel*.',
     examples: [
       { wrong: 'Il ce lave les mains.', right: 'Il se lave les mains.', note: '« se » est le pronom réfléchi.' },
@@ -363,6 +385,7 @@ const FR_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   punctuation: {
     title: 'La ponctuation française',
+    memoryHook: 'Les signes à deux étages - ; : ! ? - réclament une espace avant. En français, la ponctuation respire.',
     body: 'La règle qui surprend le plus : en français, les signes **doubles** prennent une **espace avant** — `; : ! ?` et les guillemets.\n\n*Comment ça va ?* — avec une espace avant le point d’interrogation.\n*Il a dit : « bonjour ».* — avec les guillemets français « » et une espace à l’intérieur.\n\nLes signes **simples** (`. ,`) ne prennent rien avant, une espace après.\n\nLa virgule ne peut pas relier deux phrases complètes toute seule : il faut un point, un point-virgule, ou un mot comme *et*, *mais*, *donc*.',
     examples: [
       { wrong: 'Comment ça va?', right: 'Comment ça va ?', note: 'Espace avant le point d’interrogation.' },
@@ -380,6 +403,7 @@ const FR_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   'word-choice': {
     title: 'Choisir le mot juste',
+    memoryHook: 'Connaître prend un nom, savoir prend une phrase : je connais Paris, mais je sais où il est.',
     body: 'Quelques paires trompent presque tout le monde.\n\n**savoir / connaître** — *savoir* une information ou faire quelque chose, *connaître* une personne ou un lieu. *Je **sais** nager. Je **connais** Paris.*\n**an / année** — *an* compte, *année* décrit la durée. *J’ai vingt **ans**. Une bonne **année**.*\n**bon / bien** — *bon* est un adjectif, *bien* un adverbe. *Un **bon** repas. Il travaille **bien**.*\n**apporter / amener** — on *apporte* une chose, on *amène* une personne.\n\nEt les faux amis de l’anglais : *actuellement* = en ce moment (pas « actually »), *librairie* = bookshop (pas library).',
     examples: [
       { wrong: 'Je connais nager.', right: 'Je sais nager.', note: 'Une capacité : savoir.' },
@@ -397,6 +421,7 @@ const FR_LESSONS: Partial<Record<ErrorType, LessonTemplate>> = {
 
   other: {
     title: 'Rendre la phrase plus naturelle',
+    memoryHook: 'Le naturel ne vient pas de plus de grammaire, mais de phrases plus courtes et du mot le plus simple.',
     body: 'Votre phrase était compréhensible, mais un petit changement la rend plus naturelle.\n\nCe qui fait le plus progresser n’est pas plus de grammaire : ce sont des **phrases plus courtes**, des **verbes plus précis**, et **moins de mots vides**.\n\nComparez : *J’ai pris la décision de faire une amélioration de mon français* → *J’ai décidé d’améliorer mon français.* Même sens, moitié moins de mots.\n\nÀ l’écrit, préférez aussi la forme active : *Le rapport **a été écrit** par Marie* → *Marie **a écrit** le rapport.*',
     examples: [
       { wrong: 'J’ai pris la décision de partir.', right: 'J’ai décidé de partir.', note: 'Un verbe précis vaut mieux que verbe + nom.' },

@@ -366,6 +366,7 @@ export const mockProvider: AiProvider = {
           errorType,
           title: template.title,
           body: template.body,
+          memoryHook: template.memoryHook,
           examples: template.examples,
           exercises: template.exercises.map((e) => ({ ...e, id: newId() })),
           sourceSessionId: first?.sessionId ?? null,

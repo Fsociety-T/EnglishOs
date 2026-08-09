@@ -130,8 +130,11 @@ export function seedStore(store: Store): Store {
       errorType,
       title: template.title,
       body: template.body,
+      memoryHook: template.memoryHook,
       examples: template.examples,
       exercises: template.exercises.map((e) => ({ ...e, id: newId() })),
+      reviewBox: 1 as const,
+      nextReviewAt: null,
       sourceSessionId: sessionId,
       sourceSentence:
         i === 0

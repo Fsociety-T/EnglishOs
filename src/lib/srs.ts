@@ -1,4 +1,4 @@
-import type { SrsBox, VocabWord } from '@/types'
+import type { Lesson, LessonProgress, SrsBox, VocabWord } from '@/types'
 import { SRS_INTERVAL_DAYS } from '@/types'
 import type { Translate } from '@/i18n'
 
@@ -21,8 +21,18 @@ export function nextReviewDate(box: SrsBox, from: Date = new Date()): string {
   return date.toISOString()
 }
 
+/**
+ * Words and lessons carry the same shape of schedule, so they share the test.
+ * A null date means "not waiting" rather than "overdue" - which is the whole
+ * difference between a lesson you have never opened and one you have let slip.
+ */
+function dueAt(nextReviewAt: string | null | undefined, at: Date): boolean {
+  if (!nextReviewAt) return false
+  return new Date(nextReviewAt).getTime() <= at.getTime()
+}
+
 export function isDue(word: VocabWord, at: Date = new Date()): boolean {
-  return new Date(word.nextReviewAt).getTime() <= at.getTime()
+  return dueAt(word.nextReviewAt, at)
 }
 
 /** Box 5 means it survived the full 60-day interval. */
@@ -33,6 +43,39 @@ export function isMastered(word: VocabWord): boolean {
 export function dueWords(words: VocabWord[]): VocabWord[] {
   // Weakest first, so a session that gets cut short covers what matters most.
   return words.filter((w) => isDue(w)).sort((a, b) => a.srsBox - b.srsBox)
+}
+
+/* ---------------------------------------------------------------- lessons -- */
+
+export function isLessonDue(lesson: Lesson, at: Date = new Date()): boolean {
+  return dueAt(lesson.nextReviewAt, at)
+}
+
+export function dueLessons(lessons: Lesson[]): Lesson[] {
+  // Weakest first, same as words: a study session cut short covers what is
+  // shakiest rather than whatever happens to be alphabetically first.
+  return lessons.filter((l) => isLessonDue(l)).sort((a, b) => a.reviewBox - b.reviewBox)
+}
+
+/**
+ * What one quiz attempt does to a lesson.
+ *
+ * Passing pushes the next review further out; failing sends the lesson back to
+ * box 1 and marks it as still being learned, so it returns tomorrow. This is
+ * what "practise until it is good" means in practice: the app decides when to
+ * ask again, and it asks sooner about the things you keep getting wrong.
+ */
+export function lessonProgressAfterQuiz(
+  lesson: Pick<Lesson, 'reviewBox'>,
+  passed: boolean,
+  from: Date = new Date(),
+): LessonProgress {
+  const box = passed ? nextBox(lesson.reviewBox, 'good') : 1
+  return {
+    status: passed ? 'mastered' : 'learning',
+    reviewBox: box,
+    nextReviewAt: nextReviewDate(box, from),
+  }
 }
 
 export function describeInterval(box: SrsBox, t: Translate): string {

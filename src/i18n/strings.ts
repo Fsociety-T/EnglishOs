@@ -276,6 +276,8 @@ const en = {
   'lesson.questionOf': 'Question {index} of {total}',
   'lesson.correctCount': '{count} correct',
   'lesson.fromYourWriting': 'This came from your own writing',
+  'lesson.rememberIt': 'Remember it like this',
+  'lesson.comesBack': 'This lesson comes back {when}, so you can prove it stuck.',
 
   /* --------------------------------------------------------------- write -- */
   'write.title': 'Writing practice',
@@ -337,6 +339,7 @@ const en = {
   'lessons.emptyBody':
     'Lessons appear automatically after you practise. Write or speak about a topic, and the mistakes you make become the lessons you need.',
   'lessons.all': 'All',
+  'lessons.due': 'To review',
   'lessons.new': 'New',
   'lessons.learning': 'Learning',
   'lessons.mastered': 'Mastered',
@@ -374,6 +377,7 @@ const en = {
   'dash.actionWordsBody': 'Flashcards for the words that are due today.',
   'dash.actionLessons': 'Study a weak area',
   'dash.actionLessonsBody': 'Lessons built from the mistakes you actually make.',
+  'dash.lessonsDue': '{count} to review',
   'dash.placementTitle': 'You have not been placed yet',
   'dash.placementBody':
     'Write once about a topic we pick, and the app will tell you your level instead of assuming one.',
@@ -714,6 +718,10 @@ const fr: Record<StringKey, string> = {
   'lesson.questionOf': 'Question {index} sur {total}',
   'lesson.correctCount': '{count} correctes',
   'lesson.fromYourWriting': 'Cela vient de votre propre texte',
+  'lesson.rememberIt': 'Retenez-le comme ça',
+  // "à demain" and "dans 7 jours" both have to fit here, which is why this is
+  // phrased as a rendez-vous rather than "cette leçon revient {when}".
+  'lesson.comesBack': 'Rendez-vous {when} pour vérifier que c’est bien acquis.',
 
   /* --------------------------------------------------------------- write -- */
   'write.title': 'Expression écrite',
@@ -776,6 +784,7 @@ const fr: Record<StringKey, string> = {
   'lessons.emptyBody':
     'Les leçons apparaissent automatiquement après vos exercices. Écrivez ou parlez sur un sujet, et vos erreurs deviennent les leçons dont vous avez besoin.',
   'lessons.all': 'Toutes',
+  'lessons.due': 'À réviser',
   'lessons.new': 'Nouvelles',
   'lessons.learning': 'En cours',
   'lessons.mastered': 'Maîtrisées',
@@ -814,6 +823,7 @@ const fr: Record<StringKey, string> = {
   'dash.actionWordsBody': 'Des cartes pour les mots à réviser aujourd’hui.',
   'dash.actionLessons': 'Travailler un point faible',
   'dash.actionLessonsBody': 'Des leçons bâties sur les erreurs que vous faites vraiment.',
+  'dash.lessonsDue': '{count} à réviser',
   'dash.placementTitle': 'Votre niveau n’a pas encore été évalué',
   'dash.placementBody':
     'Écrivez une fois sur un sujet que nous choisissons, et l’application vous dira votre niveau au lieu de le supposer.',

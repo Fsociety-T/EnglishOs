@@ -1,7 +1,7 @@
 import type {
   DailyStat,
   Lesson,
-  LessonStatus,
+  LessonProgress,
   Podcast,
   PodcastNote,
   PracticeSession,
@@ -36,7 +36,12 @@ export interface Repository {
   listLessons(): Promise<Lesson[]>
   getLesson(id: string): Promise<Lesson | null>
   createLessons(lessons: Lesson[]): Promise<Lesson[]>
-  setLessonStatus(id: string, status: LessonStatus): Promise<void>
+  /**
+   * Write the result of a quiz attempt: the new status, and when the lesson
+   * should come back. Status and schedule move together - a lesson that is
+   * mastered but never re-tested is the failure mode this replaces.
+   */
+  saveLessonProgress(id: string, progress: LessonProgress): Promise<void>
 
   listVocabulary(): Promise<VocabWord[]>
   addWord(word: VocabWord): Promise<VocabWord>

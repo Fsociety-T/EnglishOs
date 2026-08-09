@@ -114,6 +114,10 @@ async function finish(args: {
         // session these lessons came from, so never let the model decide it.
         sourceSessionId: sessionId,
         status: 'new',
+        // A brand new lesson is unread, not overdue: it waits in "New" until
+        // the first quiz, and only then joins the review schedule.
+        reviewBox: 1,
+        nextReviewAt: null,
         createdAt: new Date().toISOString(),
       }))
       if (lessons.length > 0) await repo.createLessons(lessons)

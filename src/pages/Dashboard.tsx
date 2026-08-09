@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
 import { BookMarked, Flame, Gauge, GraduationCap, Mic, PenLine, Timer, Type } from 'lucide-react'
-import { Button, Card, ProgressRing, SectionHeading, StatTile } from '@/components/ui'
-import { useSessions, useVocabulary } from '@/hooks/useContent'
+import { Badge, Button, Card, ProgressRing, SectionHeading, StatTile } from '@/components/ui'
+import { useLessons, useSessions, useVocabulary } from '@/hooks/useContent'
 import { useAsync } from '@/hooks/useAsync'
 import { useT } from '@/i18n'
 import type { StringKey } from '@/i18n/strings'
+import { dueLessons } from '@/lib/srs'
 import { computeStreak } from '@/lib/streak'
 import { formatRelative, localDay } from '@/lib/utils'
 import { useRepo } from '@/services/db'
@@ -33,6 +34,7 @@ export default function Dashboard() {
   const { data: profile } = useAsync(() => repo.getProfile(), [])
   const { data: sessions } = useSessions()
   const { data: vocabulary } = useVocabulary()
+  const { data: lessons } = useLessons()
 
   const streak = computeStreak(stats ?? [])
   const today = (stats ?? []).find((s) => s.day === localDay())
@@ -44,6 +46,7 @@ export default function Dashboard() {
     (w) => new Date(w.nextReviewAt).getTime() <= Date.now(),
   ).length
   const lastSession = (sessions ?? [])[0]
+  const dueLessonCount = dueLessons(lessons ?? []).length
 
   const totalWords = (stats ?? []).reduce((sum, s) => sum + s.wordsWritten, 0)
   const totalSpeakingMinutes = Math.round(
@@ -190,7 +193,14 @@ export default function Dashboard() {
                 <span className="grid size-10 place-items-center rounded-xl bg-violet/10 text-violet-soft">
                   <Icon className="size-5" />
                 </span>
-                <p className="mt-3 font-medium text-fg">{t(labelKey)}</p>
+                <p className="mt-3 flex flex-wrap items-center gap-2 font-medium text-fg">
+                  {t(labelKey)}
+                  {to === '/lessons' && dueLessonCount > 0 && (
+                    <Badge tone="warn">
+                      {t('dash.lessonsDue', { count: dueLessonCount })}
+                    </Badge>
+                  )}
+                </p>
                 <p className="mt-1 text-sm leading-relaxed text-fg-faint">{t(bodyKey)}</p>
               </Card>
             </Link>
