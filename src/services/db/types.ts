@@ -6,7 +6,6 @@ import type {
   PodcastNote,
   PracticeSession,
   Profile,
-  Song,
   SrsBox,
   VocabWord,
 } from '@/types'
@@ -56,13 +55,6 @@ export interface Repository {
   addPodcast(podcast: Podcast): Promise<Podcast>
   updatePodcast(id: string, patch: Partial<Podcast>): Promise<void>
   deletePodcast(id: string): Promise<void>
-
-  listSongs(): Promise<Song[]>
-  getSong(id: string): Promise<Song | null>
-  addSong(song: Song): Promise<Song>
-  /** Used for the words, the title, and each timing as it is tapped in. */
-  updateSong(id: string, patch: Partial<Song>): Promise<void>
-  deleteSong(id: string): Promise<void>
 
   listNotes(podcastId: string): Promise<PodcastNote[]>
   addNote(note: PodcastNote): Promise<PodcastNote>

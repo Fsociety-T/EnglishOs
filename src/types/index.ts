@@ -281,43 +281,7 @@ export interface LessonProgress {
   nextReviewAt: string | null
 }
 
-/**
- * One line of a song, and when it starts.
- *
- * `startSeconds` is null until the learner has tapped along to it. Partial
- * timing is normal and useful: an untimed line simply never lights up, which is
- * better than refusing to show a song that was timed halfway.
- */
-export interface SongLine {
-  text: string
-  startSeconds: number | null
-}
-
-/**
- * A song the learner is studying.
- *
- * The words are the learner's own transcription, pasted by them for their own
- * study - the app neither ships lyrics nor fetches them. The timings are their
- * own work too, made by tapping along once while it plays.
- */
-export interface Song {
-  id: string
-  language: LearningLanguage
-  title: string
-  artist: string
-  url: string
-  /** YouTube video id. Only YouTube can report where playback has reached. */
-  embedId: string | null
-  /**
-   * Stored as one blob rather than a child table: the lines are always read
-   * with the song and never queried on their own, the same reasoning the
-   * schema uses for a session's corrections.
-   */
-  lines: SongLine[]
-  createdAt: string
-}
-
-export type VocabSource = 'writing' | 'speaking' | 'podcast' | 'song' | 'manual'
+export type VocabSource = 'writing' | 'speaking' | 'podcast' | 'manual'
 
 /** Leitner boxes. Higher box = known better = reviewed less often. */
 export type SrsBox = 1 | 2 | 3 | 4 | 5

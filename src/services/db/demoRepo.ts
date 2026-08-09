@@ -6,7 +6,6 @@ import type {
   PodcastNote,
   PracticeSession,
   Profile,
-  Song,
   SrsBox,
   VocabWord,
 } from '@/types'
@@ -24,7 +23,6 @@ export interface Store {
   vocabulary: VocabWord[]
   podcasts: Podcast[]
   notes: PodcastNote[]
-  songs: Song[]
   stats: DailyStat[]
 }
 
@@ -36,7 +34,6 @@ function emptyStore(): Store {
     vocabulary: [],
     podcasts: [],
     notes: [],
-    songs: [],
     stats: [],
   }
 }
@@ -210,30 +207,6 @@ export const demoRepo: Repository = {
     mutate((s) => {
       s.podcasts = s.podcasts.filter((p) => p.id !== id)
       s.notes = s.notes.filter((n) => n.podcastId !== id)
-    })
-  },
-
-  async listSongs() {
-    return clone(read().songs).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-  },
-  async getSong(id) {
-    return clone(read().songs.find((s) => s.id === id) ?? null)
-  },
-  async addSong(song) {
-    mutate((s) => {
-      s.songs.push(song)
-    })
-    return song
-  },
-  async updateSong(id, patch) {
-    mutate((s) => {
-      const song = s.songs.find((item) => item.id === id)
-      if (song) Object.assign(song, patch)
-    })
-  },
-  async deleteSong(id) {
-    mutate((s) => {
-      s.songs = s.songs.filter((item) => item.id !== id)
     })
   },
 
