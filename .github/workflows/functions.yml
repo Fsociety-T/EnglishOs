@@ -35,11 +35,17 @@ jobs:
 
       # Supabase runs these on Deno, so Deno is what should judge them. It
       # resolves the npm: import and knows the Deno globals that tsc does not.
+      #
+      # --node-modules-dir=none is required, not cosmetic. Deno 2 sees the
+      # package.json at the repo root, assumes a Node project, and demands an
+      # up-to-date node_modules it then cannot find - this job never runs
+      # `npm ci`, and should not have to. The flag sends Deno to its own npm
+      # cache instead, which is how Supabase actually resolves the import.
       - name: Type-check every function
         run: |
           status=0
           for f in supabase/functions/*/index.ts; do
             echo "--- $f"
-            deno check "$f" || status=1
+            deno check --node-modules-dir=none "$f" || status=1
           done
           exit $status
