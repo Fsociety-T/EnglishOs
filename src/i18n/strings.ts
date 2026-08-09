@@ -209,6 +209,9 @@ const en = {
   'pod.emptyTitle': 'Your shelf is empty',
   'pod.emptyBody':
     'Paste a YouTube or Spotify link above. You can watch it here, take notes with timestamps, and send any new word straight to your notebook.',
+  'pod.watched': 'Watched {percent}%',
+  'pod.finishFirst':
+    'Watch it to the end and this marks itself done. You are {percent}% through.',
   'pod.toWatch': 'To watch',
   'pod.watching': 'Watching',
   'pod.done': 'Done',
@@ -674,6 +677,9 @@ const fr: Record<StringKey, string> = {
   'pod.emptyTitle': 'Votre étagère est vide',
   'pod.emptyBody':
     'Collez un lien YouTube ou Spotify ci-dessus. Vous pourrez le regarder ici, prendre des notes horodatées, et envoyer chaque nouveau mot directement dans votre carnet.',
+  'pod.watched': 'Regardé à {percent} %',
+  'pod.finishFirst':
+    'Regardez-le jusqu’au bout et il se marquera tout seul comme terminé. Vous en êtes à {percent} %.',
   'pod.toWatch': 'À regarder',
   'pod.watching': 'En cours',
   'pod.done': 'Terminé',
