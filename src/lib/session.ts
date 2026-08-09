@@ -80,6 +80,12 @@ async function finish(args: {
     topicTitle: input.topicTitle,
     prompt: input.prompt,
     content: input.content,
+    // An "improved version" identical to what they wrote teaches nothing and
+    // just makes the tab look broken, so it is dropped rather than shown.
+    improvedText:
+      review.improvedText.trim() && review.improvedText.trim() !== input.content.trim()
+        ? review.improvedText.trim()
+        : null,
     audioPath: input.audioPath ?? null,
     durationSeconds: Math.round(input.durationSeconds),
     wordCount: countWords(input.content),

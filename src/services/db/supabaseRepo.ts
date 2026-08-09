@@ -44,6 +44,7 @@ interface SessionRow {
   topic_title: string
   prompt: string
   content: string
+  improved_text: string | null
   audio_path: string | null
   duration_seconds: number
   word_count: number
@@ -66,6 +67,7 @@ function toSession(row: SessionRow): PracticeSession {
     topicTitle: row.topic_title,
     prompt: row.prompt,
     content: row.content,
+    improvedText: row.improved_text ?? null,
     audioPath: row.audio_path,
     durationSeconds: row.duration_seconds,
     wordCount: row.word_count,
@@ -249,6 +251,7 @@ export const supabaseRepo: Repository = {
       topic_title: session.topicTitle,
       prompt: session.prompt,
       content: session.content,
+      improved_text: session.improvedText ?? null,
       audio_path: session.audioPath,
       duration_seconds: session.durationSeconds,
       word_count: session.wordCount,

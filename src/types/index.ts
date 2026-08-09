@@ -202,6 +202,12 @@ export interface PracticeSession {
   prompt: string
   /** The essay, or the speech transcript. */
   content: string
+  /**
+   * A model rewrite of `content`: the learner's own ideas, restructured the
+   * way a strong writer at their level would. Null when the reviewer did not
+   * produce one.
+   */
+  improvedText?: string | null
   audioPath?: string | null
   durationSeconds: number
   wordCount: number
