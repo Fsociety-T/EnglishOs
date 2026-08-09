@@ -53,6 +53,8 @@ interface SessionRow {
   strengths: string[]
   next_focus: string[]
   metrics: FluencyMetrics | null
+  is_placement: boolean
+  estimated_level: PracticeSession['estimatedLevel']
   created_at: string
 }
 
@@ -73,6 +75,8 @@ function toSession(row: SessionRow): PracticeSession {
     strengths: row.strengths ?? [],
     nextFocus: row.next_focus ?? [],
     metrics: row.metrics,
+    isPlacement: row.is_placement ?? false,
+    estimatedLevel: row.estimated_level ?? null,
     createdAt: row.created_at,
   }
 }
@@ -180,7 +184,7 @@ export const supabaseRepo: Repository = {
     const uid = await userId()
     const { data, error } = await sb
       .from('profiles')
-      .select('display_name, language, level, daily_goal_minutes')
+      .select('display_name, language, level, writing_level, speaking_level, daily_goal_minutes')
       .eq('id', uid)
       .maybeSingle()
     if (error) throw new Error(error.message)
@@ -190,6 +194,8 @@ export const supabaseRepo: Repository = {
       displayName: data.display_name,
       language: data.language ?? DEFAULT_PROFILE.language,
       level: data.level,
+      writingLevel: data.writing_level ?? null,
+      speakingLevel: data.speaking_level ?? null,
       dailyGoalMinutes: data.daily_goal_minutes,
     }
   },
@@ -202,6 +208,8 @@ export const supabaseRepo: Repository = {
       display_name: profile.displayName,
       language: profile.language,
       level: profile.level,
+      writing_level: profile.writingLevel,
+      speaking_level: profile.speakingLevel,
       daily_goal_minutes: profile.dailyGoalMinutes,
     })
     if (error) throw new Error(error.message)
@@ -242,6 +250,8 @@ export const supabaseRepo: Repository = {
       strengths: session.strengths,
       next_focus: session.nextFocus,
       metrics: session.metrics,
+      is_placement: session.isPlacement ?? false,
+      estimated_level: session.estimatedLevel ?? null,
       created_at: session.createdAt,
     })
     if (error) throw new Error(error.message)

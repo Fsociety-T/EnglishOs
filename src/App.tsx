@@ -6,6 +6,7 @@ import Auth from '@/pages/Auth'
 import Dashboard from '@/pages/Dashboard'
 import LessonDetail from '@/pages/LessonDetail'
 import Lessons from '@/pages/Lessons'
+import LevelTest from '@/pages/LevelTest'
 import NotFound from '@/pages/NotFound'
 import PodcastDetail from '@/pages/PodcastDetail'
 import Podcasts from '@/pages/Podcasts'
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/write" element={<Write />} />
         <Route path="/speak" element={<Speak />} />
+        <Route path="/level" element={<LevelTest />} />
         <Route path="/session/:id" element={<SessionView />} />
         <Route path="/lessons" element={<Lessons />} />
         <Route path="/lessons/:id" element={<LessonDetail />} />

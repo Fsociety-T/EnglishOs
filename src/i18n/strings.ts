@@ -69,6 +69,14 @@ const en = {
   'settings.levelLabel': 'Your {language} level',
   'settings.goalLabel': 'Daily goal:',
   'settings.goalHint': 'Small and daily beats long and rare. Fifteen minutes is a good start.',
+  'settings.measuredLevel': 'Your measured level',
+  'settings.measuredBlurb':
+    'The setting above is yours to choose. This is what the writing test actually measured.',
+  'settings.measuredWriting': 'Writing: {level}, measured {date}.',
+  'settings.measuredWritingNoDate': 'Writing: {level}.',
+  'settings.measuredNever': 'You have not taken the writing test yet.',
+  'settings.measuredSpeakingSoon': 'A speaking test is coming later.',
+  'settings.checkLevel': 'Check my level',
   'settings.setup': 'How the app is set up',
   'settings.corrections': 'Corrections',
   'settings.correctionsReal': 'Your writing and speaking are reviewed by the full AI.',
@@ -130,6 +138,11 @@ const en = {
   'prog.minutesSub': 'Last 30 days of activity.',
   'prog.summaryOne': 'You have written {words} words across 1 session.',
   'prog.summaryMany': 'You have written {words} words across {count} sessions.',
+  'prog.levelTitle': 'Your measured level',
+  'prog.levelSub': 'Every time you have taken the writing test.',
+  'prog.levelNone':
+    'You have not taken the writing test yet, so your level is a setting rather than a measurement.',
+  'prog.takeTest': 'Find my level',
 
   /* -------------------------------------------------------- session view -- */
   'session.loading': 'Loading session...',
@@ -361,6 +374,51 @@ const en = {
   'dash.actionWordsBody': 'Flashcards for the words that are due today.',
   'dash.actionLessons': 'Study a weak area',
   'dash.actionLessonsBody': 'Lessons built from the mistakes you actually make.',
+  'dash.placementTitle': 'You have not been placed yet',
+  'dash.placementBody':
+    'Write once about a topic we pick, and the app will tell you your level instead of assuming one.',
+  'dash.placementAction': 'Find my level',
+
+  /* ----------------------------------------------------------- placement -- */
+  'placement.title': 'Find your level',
+  'placement.subtitle':
+    'One piece of writing is enough to place you on the CEFR scale, from A1 to C2.',
+  'placement.howTitle': 'How this works',
+  'placement.how1': 'Write about the topic below. Ten minutes, and {target} words or more.',
+  'placement.how2':
+    'Mistakes are not the whole story. What counts just as much is the language you reach for - longer sentences, linked ideas, harder tenses. Play it safe and you will place lower than you are.',
+  'placement.how3':
+    'You still get every correction and the lessons that come from them. This counts as a real practice session.',
+  'placement.yourTopic': 'Your topic',
+  'placement.differentTopic': 'Different topic',
+  'placement.start': 'Start the test',
+  'placement.notNow': 'Not now',
+  'placement.placeholder':
+    'Write as much as you can. Reach for the sentences you are not sure about - trying and missing says more about your level than playing safe.',
+  'placement.words': '{count} / {target} words',
+  'placement.timeLeft': '{time} left',
+  'placement.timeUp': 'Ten minutes are up. Finish your sentence and send it - nothing is locked.',
+  'placement.tooShort': 'Write at least {count} words to be placed.',
+  'placement.submit': 'Get my level',
+  'placement.checking': 'Reading what you wrote...',
+  'placement.failed': 'Something went wrong. Your writing is safe.',
+  'placement.quit': 'Stop the test',
+  'placement.resultTitle': 'Your writing level',
+  'placement.resultAbout': 'About {level}',
+  'placement.resultFloor': 'At least {level}',
+  'placement.confidenceLow': 'Low confidence',
+  'placement.confidenceMedium': 'Medium confidence',
+  'placement.confidenceHigh': 'High confidence',
+  'placement.shortSample':
+    'You wrote {count} words. Under {target} there is not enough writing to show anything higher, so read this as a floor, not a ceiling. A longer answer can only move it up.',
+  'placement.whyTitle': 'What this is based on',
+  'placement.use': 'Use {level} as my level',
+  'placement.keep': 'Keep {level}',
+  'placement.applied': 'Your level is now {level}.',
+  'placement.kept': 'Your level stays at {level}. The measurement is saved either way.',
+  'placement.seeCorrections': 'See every correction',
+  'placement.retake': 'Take the test again',
+  'placement.backToDashboard': 'Back to dashboard',
 
   /* ------------------------------------------------------- error boundary -- */
   'crash.title': 'Something broke on this screen',
@@ -441,6 +499,14 @@ const fr: Record<StringKey, string> = {
   'settings.goalLabel': 'Objectif quotidien :',
   'settings.goalHint':
     'Court et régulier vaut mieux que long et rare. Quinze minutes est un bon début.',
+  'settings.measuredLevel': 'Votre niveau mesuré',
+  'settings.measuredBlurb':
+    'Le réglage ci-dessus vous appartient. Voici ce que le test d’écriture a réellement mesuré.',
+  'settings.measuredWriting': 'Écrit : {level}, mesuré le {date}.',
+  'settings.measuredWritingNoDate': 'Écrit : {level}.',
+  'settings.measuredNever': 'Vous n’avez pas encore passé le test d’écriture.',
+  'settings.measuredSpeakingSoon': 'Un test d’expression orale arrivera plus tard.',
+  'settings.checkLevel': 'Évaluer mon niveau',
   'settings.setup': 'Configuration de l’application',
   'settings.corrections': 'Corrections',
   'settings.correctionsReal': 'Vos textes et votre expression orale sont corrigés par l’IA complète.',
@@ -507,6 +573,11 @@ const fr: Record<StringKey, string> = {
   'prog.minutesSub': 'Les 30 derniers jours d’activité.',
   'prog.summaryOne': 'Vous avez écrit {words} mots en 1 session.',
   'prog.summaryMany': 'Vous avez écrit {words} mots en {count} sessions.',
+  'prog.levelTitle': 'Votre niveau mesuré',
+  'prog.levelSub': 'Chaque fois que vous avez passé le test d’écriture.',
+  'prog.levelNone':
+    'Vous n’avez pas encore passé le test d’écriture : votre niveau est un réglage, pas une mesure.',
+  'prog.takeTest': 'Évaluer mon niveau',
 
   /* -------------------------------------------------------- session view -- */
   'session.loading': 'Chargement de la session...',
@@ -743,6 +814,52 @@ const fr: Record<StringKey, string> = {
   'dash.actionWordsBody': 'Des cartes pour les mots à réviser aujourd’hui.',
   'dash.actionLessons': 'Travailler un point faible',
   'dash.actionLessonsBody': 'Des leçons bâties sur les erreurs que vous faites vraiment.',
+  'dash.placementTitle': 'Votre niveau n’a pas encore été évalué',
+  'dash.placementBody':
+    'Écrivez une fois sur un sujet que nous choisissons, et l’application vous dira votre niveau au lieu de le supposer.',
+  'dash.placementAction': 'Évaluer mon niveau',
+
+  /* ----------------------------------------------------------- placement -- */
+  'placement.title': 'Évaluez votre niveau',
+  'placement.subtitle':
+    'Un seul texte suffit pour vous situer sur l’échelle CECRL, de A1 à C2.',
+  'placement.howTitle': 'Comment ça marche',
+  'placement.how1': 'Écrivez sur le sujet ci-dessous. Dix minutes, et {target} mots ou plus.',
+  'placement.how2':
+    'Les erreurs ne font pas tout. Ce qui compte autant, c’est la langue que vous osez employer : des phrases plus longues, des idées reliées, des temps difficiles. Jouez la sécurité et vous serez placé plus bas que votre vrai niveau.',
+  'placement.how3':
+    'Vous recevez quand même toutes les corrections et les leçons qui en découlent. Cela compte comme une vraie session de pratique.',
+  'placement.yourTopic': 'Votre sujet',
+  'placement.differentTopic': 'Un autre sujet',
+  'placement.start': 'Commencer le test',
+  'placement.notNow': 'Pas maintenant',
+  'placement.placeholder':
+    'Écrivez autant que vous pouvez. Osez les phrases dont vous n’êtes pas sûr : essayer et se tromper en dit plus sur votre niveau que jouer la sécurité.',
+  'placement.words': '{count} / {target} mots',
+  'placement.timeLeft': 'Il reste {time}',
+  'placement.timeUp':
+    'Les dix minutes sont écoulées. Terminez votre phrase et envoyez - rien n’est bloqué.',
+  'placement.tooShort': 'Écrivez au moins {count} mots pour être évalué.',
+  'placement.submit': 'Voir mon niveau',
+  'placement.checking': 'Lecture de votre texte...',
+  'placement.failed': 'Une erreur est survenue. Votre texte est conservé.',
+  'placement.quit': 'Arrêter le test',
+  'placement.resultTitle': 'Votre niveau à l’écrit',
+  'placement.resultAbout': 'Environ {level}',
+  'placement.resultFloor': 'Au moins {level}',
+  'placement.confidenceLow': 'Confiance faible',
+  'placement.confidenceMedium': 'Confiance moyenne',
+  'placement.confidenceHigh': 'Confiance élevée',
+  'placement.shortSample':
+    'Vous avez écrit {count} mots. En dessous de {target}, il n’y a pas assez de texte pour montrer davantage : lisez ce résultat comme un plancher, pas comme un plafond. Un texte plus long ne peut que le faire monter.',
+  'placement.whyTitle': 'Sur quoi cela repose',
+  'placement.use': 'Adopter {level} comme niveau',
+  'placement.keep': 'Garder {level}',
+  'placement.applied': 'Votre niveau est maintenant {level}.',
+  'placement.kept': 'Votre niveau reste {level}. La mesure est enregistrée dans tous les cas.',
+  'placement.seeCorrections': 'Voir toutes les corrections',
+  'placement.retake': 'Repasser le test',
+  'placement.backToDashboard': 'Retour au tableau de bord',
 
   /* ------------------------------------------------------- error boundary -- */
   'crash.title': 'Un problème est survenu sur cet écran',

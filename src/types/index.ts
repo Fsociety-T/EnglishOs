@@ -11,6 +11,24 @@ export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2'
 export const CEFR_LEVELS: readonly CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
 /**
+ * The result of a placement test.
+ *
+ * `confidence` is deliberately part of the result rather than hidden: a single
+ * writing sample supports about one CEFR band of precision, and the screen
+ * that shows this says "about B1" rather than pretending otherwise.
+ *
+ * `evidence` is what the estimate was based on, in the learner's language, so
+ * a surprising result can be argued with instead of just accepted.
+ */
+export interface LevelEstimate {
+  level: CefrLevel
+  confidence: 'low' | 'medium' | 'high'
+  evidence: string[]
+  /** False when the sample was too short to judge; `level` is then a floor. */
+  conclusive: boolean
+}
+
+/**
  * The language the learner is studying. This is the single switch that decides
  * which lessons, topics, grammar rules and interface text the app uses, so it
  * is chosen at sign-up and stored on the profile rather than guessed from the
@@ -194,6 +212,15 @@ export interface PracticeSession {
   strengths: string[]
   nextFocus: string[]
   metrics?: FluencyMetrics | null
+  /**
+   * True when this session was the placement test. Placement runs through the
+   * ordinary review pipeline - it is real practice and still earns corrections
+   * and lessons - so the only thing marking it apart is this flag and the
+   * level it produced.
+   */
+  isPlacement?: boolean
+  /** The level this sample was judged at. Null on ordinary sessions. */
+  estimatedLevel?: CefrLevel | null
   createdAt: string
 }
 
@@ -293,7 +320,20 @@ export interface Profile {
   displayName: string
   /** The language being learned, and the language the interface speaks. */
   language: LearningLanguage
+  /**
+   * The level the app works at: which prompts it suggests and what it tells
+   * the reviewer to expect. Set by the placement test, but always editable by
+   * hand - an estimate can be wrong, and nobody should be stuck with it.
+   */
   level: CefrLevel
+  /**
+   * The last *measured* writing level, kept separate from `level` so editing
+   * the setting by hand does not overwrite the measurement. Null means the
+   * placement test has never been taken, which is different from B1.
+   */
+  writingLevel: CefrLevel | null
+  /** Reserved for the speaking placement test. */
+  speakingLevel: CefrLevel | null
   dailyGoalMinutes: number
 }
 
@@ -302,6 +342,8 @@ export const DEFAULT_PROFILE: Profile = {
   displayName: 'Learner',
   language: 'en',
   level: 'B1',
+  writingLevel: null,
+  speakingLevel: null,
   dailyGoalMinutes: 20,
 }
 

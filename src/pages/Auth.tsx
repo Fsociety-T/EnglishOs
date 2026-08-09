@@ -62,6 +62,12 @@ export default function Auth() {
       if (signingUp && !result.data.session) {
         throw new Error(t('auth.confirmEmailError'))
       }
+
+      // A brand new account has no measured level, only the B1 the profile
+      // defaults to. Land on the placement test instead of a dashboard that has
+      // already quietly guessed - the test screen offers "not now" for anyone
+      // who would rather just start writing.
+      if (signingUp) window.location.hash = '#/level'
     } catch (err) {
       setError(err instanceof Error ? err.message : t('auth.genericError'))
     } finally {

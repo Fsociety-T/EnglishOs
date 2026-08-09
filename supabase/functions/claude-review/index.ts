@@ -1,6 +1,14 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
-type Action = 'review-writing' | 'review-speaking' | 'generate-lessons' | 'suggest-vocabulary'
+type Action =
+  | 'review-writing'
+  | 'review-speaking'
+  | 'generate-lessons'
+  | 'suggest-vocabulary'
+  | 'estimate-level'
+
+const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
+const CONFIDENCES = new Set(['low', 'medium', 'high'])
 
 const ERROR_TYPES = new Set([
   'verb-tense',
@@ -204,6 +212,12 @@ const VOCABULARY_SCHEMA = object({
   },
 })
 
+const LEVEL_SCHEMA = object({
+  level: { type: 'string', enum: [...CEFR_LEVELS] },
+  confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
+  evidence: { type: 'array', items: str },
+})
+
 function schemaFor(action: Action): { name: string; schema: unknown } {
   switch (action) {
     case 'review-writing':
@@ -213,7 +227,24 @@ function schemaFor(action: Action): { name: string; schema: unknown } {
       return { name: 'lessons', schema: LESSONS_SCHEMA }
     case 'suggest-vocabulary':
       return { name: 'vocabulary', schema: VOCABULARY_SCHEMA }
+    case 'estimate-level':
+      return { name: 'level', schema: LEVEL_SCHEMA }
   }
+}
+
+/**
+ * Judge a writing sample against the CEFR descriptors.
+ *
+ * The instruction about range is the whole point. Asked to grade a piece of
+ * writing, a model will happily equate "few mistakes" with "high level", which
+ * ranks a flawless beginner above an ambitious intermediate. Telling it that
+ * range sets the ceiling and accuracy places the learner inside it is what
+ * stops that, and it mirrors exactly what the offline estimator does.
+ */
+function levelPrompt(input: Record<string, unknown>): string {
+  const profile = LANGUAGE_PROFILE[language(input)]
+  const corrections = Array.isArray(input.corrections) ? input.corrections.slice(0, 40) : []
+  return `You are a ${profile.name} examiner placing a learner on the CEFR scale from a single writing sample.\n\n${profile.feedbackLanguage}\n\nJudge on two axes, in this order.\n\nRANGE sets the ceiling - how much language the learner reaches for at all: sentence length and variety, subordinate clauses, the tenses and moods attempted, vocabulary beyond the everyday core, and discourse markers.\n\nACCURACY places them inside that ceiling - how much of what they reached for actually lands.\n\nCritical: fewer mistakes does NOT mean a higher level. A learner writing only short, simple, correct sentences is A1 or A2 no matter how clean the text is. A learner attempting complex structures and getting some wrong is B1 or higher, because attempting them is itself evidence. Never place a learner above B1 on the basis of clean but simple writing, and never below B1 purely because an ambitious attempt failed.\n\nLength caps the ceiling: a sample under 120 words cannot demonstrate C1 or C2, however good it is.\n\nReturn a JSON object with exactly this shape:\n{"level":"A1|A2|B1|B2|C1|C2","confidence":"low|medium|high","evidence":["short reason","short reason"]}\n\nGive two to four evidence lines. Each must point at something concrete in the text - a structure attempted, a pattern of error, the range of vocabulary - not a general compliment.\n\nMistakes already found by the checker: ${JSON.stringify(corrections)}\n\nLearner text:\n${text(input.text, 12_000)}`
 }
 
 function promptFor(action: Action, input: Record<string, unknown>): string {
@@ -226,6 +257,8 @@ function promptFor(action: Action, input: Record<string, unknown>): string {
       return lessonsPrompt(input)
     case 'suggest-vocabulary':
       return vocabularyPrompt(input)
+    case 'estimate-level':
+      return levelPrompt(input)
   }
 }
 
@@ -315,6 +348,31 @@ function validateVocabulary(value: unknown) {
   })
 }
 
+function validateLevel(value: unknown, wordCount: number) {
+  const row = (value ?? {}) as Record<string, unknown>
+  const level = text(row.level, 2).toUpperCase()
+  const confidence = text(row.confidence, 10).toLowerCase()
+  const evidence = (Array.isArray(row.evidence) ? row.evidence : [])
+    .slice(0, 5)
+    .map((line) => text(line, 300))
+    .filter(Boolean)
+
+  // The model is told about the length rule, but it is enforced here too: a
+  // short sample must never come back as C1 just because it was well written.
+  const conclusive = wordCount >= 120
+  let index = (CEFR_LEVELS as readonly string[]).indexOf(level)
+  if (index < 0) index = (CEFR_LEVELS as readonly string[]).indexOf('B1')
+  if (!conclusive) index = Math.min(index, (CEFR_LEVELS as readonly string[]).indexOf('B1'))
+  if (wordCount < 60) index = Math.min(index, (CEFR_LEVELS as readonly string[]).indexOf('A2'))
+
+  return {
+    level: CEFR_LEVELS[index],
+    confidence: conclusive && CONFIDENCES.has(confidence) ? confidence : 'low',
+    evidence,
+    conclusive,
+  }
+}
+
 Deno.serve(async (request) => {
   const origin = request.headers.get('Origin')
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(origin) })
@@ -332,7 +390,10 @@ Deno.serve(async (request) => {
 
     const body = await request.json() as { action?: Action; input?: unknown }
     const action = body.action
-    if (!action || !['review-writing', 'review-speaking', 'generate-lessons', 'suggest-vocabulary'].includes(action)) {
+    if (
+      !action ||
+      !['review-writing', 'review-speaking', 'generate-lessons', 'suggest-vocabulary', 'estimate-level'].includes(action)
+    ) {
       return respond({ error: 'Unknown AI request.' }, 400, origin)
     }
     if (!body.input || typeof body.input !== 'object' || JSON.stringify(body.input).length > MAX_INPUT_CHARS) {
@@ -391,7 +452,12 @@ Deno.serve(async (request) => {
         ? validateReview(parsed, text(input.transcript, 12_000))
         : action === 'generate-lessons'
           ? validateLessons(parsed?.lessons)
-          : validateVocabulary(parsed?.words)
+          : action === 'suggest-vocabulary'
+            ? validateVocabulary(parsed?.words)
+            : validateLevel(
+                parsed,
+                text(input.text, 12_000).split(/[^A-Za-z\u00C0-\u024F']+/).filter(Boolean).length,
+              )
     return respond({ data }, 200, origin)
   } catch (error) {
     console.error('claude-review failed:', error instanceof Error ? error.message : 'Unknown error')

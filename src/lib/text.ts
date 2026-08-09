@@ -1,6 +1,16 @@
 import type { FluencyMetrics } from '@/types'
 
-const WORD_RE = /[A-Za-z']+/g
+/**
+ * A word is a run of Latin letters, optionally joined by an internal
+ * apostrophe: "don't" and "l'école" are each one word.
+ *
+ * The accented ranges are not decoration. With a plain [A-Za-z] class every
+ * accent split a French word in half - "mangé" counted as "mang", "très" as
+ * "tr" plus "s", "à" vanished entirely - which quietly corrupted every word
+ * count, every per-100-words score and every minimum-length gate in the app
+ * for French learners.
+ */
+const WORD_RE = /[A-Za-zÀ-ÖØ-öø-ÿ]+(?:['’][A-Za-zÀ-ÖØ-öø-ÿ]+)*/g
 
 export function words(text: string): string[] {
   return text.match(WORD_RE) ?? []

@@ -1,0 +1,55 @@
+name: Check level estimator
+
+# The placement test tells a learner what level they are. If the estimator
+# drifts, nothing crashes and nothing fails to build - it just starts telling
+# people the wrong thing, quietly, forever. Only an assertion catches that.
+#
+# The property under test is not the arithmetic but the ordering: a flawless
+# beginner must never outrank an ambitious intermediate. Scoring on accuracy
+# alone inverts exactly that pair, so this job exists to keep the range axis
+# honest as the rules and weights change.
+#
+# Separate from the Pages deploy on purpose, same as the edge function check:
+# a drifting estimator should be loud, but must never stop the website
+# shipping.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/lib/level.ts'
+      - 'src/lib/levelSignals.ts'
+      - 'src/lib/text.ts'
+      - 'src/services/ai/rules*.ts'
+      - 'scripts/calibrate-levels.mts'
+      - '.github/workflows/levels.yml'
+  pull_request:
+    paths:
+      - 'src/lib/level.ts'
+      - 'src/lib/levelSignals.ts'
+      - 'src/lib/text.ts'
+      - 'src/services/ai/rules*.ts'
+      - 'scripts/calibrate-levels.mts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Calibrate the level estimator
+        run: npm run check:levels
