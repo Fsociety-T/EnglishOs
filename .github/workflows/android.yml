@@ -70,6 +70,7 @@ jobs:
       - name: Restore signing keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STOREPASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
             echo "::error::Missing ANDROID_KEYSTORE_BASE64 secret. Everything before"
@@ -77,8 +78,28 @@ jobs:
             echo "::error::See docs/ANDROID.md."
             exit 1
           fi
-          printf '%s' "$KEYSTORE_BASE64" | base64 -d > android.keystore
-          test -s android.keystore
+
+          # Strip whitespace first: a value pasted through a browser can pick up
+          # newlines, and base64 that is still a valid multiple of 4 decodes
+          # happily into a truncated file.
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > android.keystore
+
+          size=$(stat -c%s android.keystore)
+          echo "decoded keystore: ${size} bytes"
+
+          # Prove the keystore opens before spending a Gradle build on it.
+          # Without this the failure surfaces ~50s later as a Java stack trace
+          # from apksigner, which says nothing about the actual cause.
+          if ! keytool -list -keystore android.keystore -storepass "$STOREPASS" >/dev/null 2>&1; then
+            echo "::error::The keystore did not open (decoded to ${size} bytes)."
+            echo "::error::Two possible causes:"
+            echo "::error::1. ANDROID_KEYSTORE_BASE64 is truncated. It is one very long"
+            echo "::error::   line and a partial copy still decodes into a broken file."
+            echo "::error::   Re-copy the WHOLE value from android.keystore.base64.txt."
+            echo "::error::2. ANDROID_KEYSTORE_PASSWORD does not match the keystore."
+            exit 1
+          fi
+          echo "keystore opened successfully"
 
       - name: Build and sign
         env:

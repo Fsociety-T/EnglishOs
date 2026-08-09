@@ -17,17 +17,25 @@ that feature.
 
 ### 1. Add the three GitHub secrets
 
-`KEYSTORE_SECRETS.txt` in the repository root holds the values. It is gitignored
-and must never be committed or pasted into a chat.
+Three gitignored files in the repository root hold the values, one value per
+file so a copy cannot pick up a stray label. Never commit them or paste them
+into a chat.
 
 Go to **Settings → Secrets and variables → Actions → New repository secret** and
-add all three, copying each value out of that file:
+add all three:
 
-| Secret | From |
+| Secret | Copy the entire contents of |
 |---|---|
-| `ANDROID_KEYSTORE_BASE64` | the long base64 block |
-| `ANDROID_KEYSTORE_PASSWORD` | the password |
-| `ANDROID_KEY_PASSWORD` | the same password |
+| `ANDROID_KEYSTORE_BASE64` | `android.keystore.base64.txt` |
+| `ANDROID_KEYSTORE_PASSWORD` | `android.keystore.password.txt` |
+| `ANDROID_KEY_PASSWORD` | `android.keystore.password.txt` (same value) |
+
+> **The base64 is a single 3624-character line.** Open the file, select all
+> (`Ctrl+A`), copy. Selecting by dragging tends to stop short, and a partial
+> copy is still valid base64 — it decodes into a truncated keystore and fails
+> at signing with `java.io.EOFException`. The workflow now checks the keystore
+> opens before building and reports the decoded byte size; the correct size is
+> **2718 bytes**.
 
 > **Back up `android.keystore` somewhere private.** It is the app's identity.
 > Lose it and you can never update an installed app again — users would have to
