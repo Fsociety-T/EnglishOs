@@ -1,0 +1,45 @@
+name: Check Edge Functions
+
+# The Pages build runs `tsc --noEmit`, but tsconfig.json only includes `src`,
+# so nothing ever type-checked supabase/functions. That gap is how a retired
+# model id shipped and broke AI review in production until someone tried it.
+#
+# Deliberately a separate workflow from the Pages deploy: a problem in a
+# function should surface loudly, but must never stop the website shipping.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/functions.yml'
+  pull_request:
+    paths:
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # Supabase runs these on Deno, so Deno is what should judge them. It
+      # resolves the npm: import and knows the Deno globals that tsc does not.
+      - name: Type-check every function
+        run: |
+          status=0
+          for f in supabase/functions/*/index.ts; do
+            echo "--- $f"
+            deno check "$f" || status=1
+          done
+          exit $status
