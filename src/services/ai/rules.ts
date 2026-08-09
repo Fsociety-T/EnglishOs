@@ -246,7 +246,9 @@ export const RULES: Rule[] = [
   },
   {
     id: 'have-years',
-    pattern: /\b(i|he|she|we|they|you)\s+(have|has)\s+(\d+)\s+years?\b/gi,
+    // "old" is optional in the match but always present in the fix, so
+    // "I have 30 years old" is not corrected to "I am 30 years old old".
+    pattern: /\b(i|he|she|we|they|you)\s+(have|has)\s+(\d+)\s+years?(?:\s+old)?\b/gi,
     errorType: 'word-choice',
     severity: 'major',
     fix: (m) => {
