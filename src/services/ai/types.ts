@@ -4,6 +4,7 @@ import type {
   FluencyMetrics,
   LearningLanguage,
   Lesson,
+  LevelEstimate,
   Scores,
 } from '@/types'
 
@@ -75,4 +76,16 @@ export interface AiProvider {
     level: CefrLevel
     language: LearningLanguage
   }): Promise<VocabSuggestion[]>
+  /**
+   * Judge a writing sample against the CEFR descriptors.
+   *
+   * `corrections` come from the review that has already run, so the estimate
+   * sees the same mistakes the learner is about to read about rather than
+   * forming a second, contradictory opinion.
+   */
+  estimateLevel(input: {
+    text: string
+    language: LearningLanguage
+    corrections: Correction[]
+  }): Promise<LevelEstimate>
 }

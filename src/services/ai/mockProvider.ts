@@ -1,7 +1,15 @@
-import type { Correction, ErrorType, LearningLanguage, Scores, Severity } from '@/types'
+import type {
+  Correction,
+  ErrorType,
+  LearningLanguage,
+  LevelEstimate,
+  Scores,
+  Severity,
+} from '@/types'
 import { ERROR_TYPE_LABEL } from '@/types'
 import { countWords, paceScore, sentenceAt, sentences, uniqueWordRatio, words } from '@/lib/text'
 import { clamp, newId } from '@/lib/utils'
+import { estimateLevel } from '@/lib/level'
 import { lessonTemplate } from './lessonLibrary'
 import { RULES } from './rules'
 import { FR_RULES } from './rulesFr'
@@ -377,5 +385,12 @@ export const mockProvider: AiProvider = {
   }): Promise<VocabSuggestion[]> {
     await delay(400)
     return pickVocabulary(text, language)
+  },
+
+  async estimateLevel({ text, language, corrections }): Promise<LevelEstimate> {
+    await delay(400)
+    // The offline path is the heuristic itself - deterministic, and the same
+    // code the calibration script asserts against.
+    return estimateLevel({ text, corrections, language })
   },
 }
