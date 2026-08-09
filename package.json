@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "check:levels": "tsx scripts/calibrate-levels.mts",
-    "check:detection": "tsx scripts/calibrate-detection.mts"
+    "check:detection": "tsx scripts/calibrate-detection.mts",
+    "check:transcript": "tsx scripts/calibrate-transcript.mts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.2",
