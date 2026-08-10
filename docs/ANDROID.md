@@ -81,20 +81,30 @@ visible URL bar.
 **Actions → Build Android APK → Run workflow.** Optionally set a version name
 like `1.0.1`.
 
-When it finishes, download the **englishos-apk** artifact from the run page. It
-contains:
+Each successful build publishes a **release** tagged `v<version name>`, with
+`EnglishOS-<version>.apk` attached. That is the copy to install: it is a plain
+public link that opens on the phone, and it does not expire.
 
-- `app-release-signed.apk` — sideload this onto a phone
-- `app-release-bundle.aab` — only needed for the Play Store
+Re-running with a version name that already has a release **replaces** the APK
+on it rather than failing, so a bad build can be corrected without inventing a
+version number.
+
+The run page also keeps an **englishos-apk** artifact for 30 days, holding both
+`app-release-signed.apk` and `app-release-bundle.aab`. The `.aab` is only needed
+for the Play Store, which is why it is not attached to the release.
 
 `versionCode` is set from the workflow run number, so every build can install
 over the previous one. Android rejects an update whose `versionCode` is not
 higher than the installed one.
 
+Because the repository is public, so is the release. Anyone with the link can
+download the APK.
+
 ## Installing on a phone
 
-Transfer the `.apk` and open it. Android will ask you to allow installing from
-unknown sources — expected for an app not from the Play Store.
+Open the release on the phone, download the `.apk`, and tap it. Android will ask
+you to allow installing from unknown sources — expected for an app not from the
+Play Store.
 
 ## Changing the app
 
