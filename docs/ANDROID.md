@@ -69,6 +69,32 @@ GitHub Pages serves that path only from a repository named exactly
 ]
 ```
 
+**Also add an empty `.nojekyll` file at that repository's root.** GitHub Pages
+runs Jekyll, and Jekyll excludes every file and folder whose name begins with a
+dot — so `.well-known/` is dropped from the published site and the URL above
+returns 404 even though the file is committed. `.nojekyll` turns Jekyll off and
+the folder is served as-is. Its contents do not matter, only that it exists.
+
+Then **Settings → Pages → Build and deployment → Deploy from a branch → `main` /
+`(root)` → Save**, and wait for the first build.
+
+Check it before rebuilding anything:
+
+```sh
+curl -i https://fsociety-t.github.io/.well-known/assetlinks.json
+```
+
+`200` with `content-type: application/json` is what Android needs. Google's
+validator shows what Android itself will conclude:
+
+```
+https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://fsociety-t.github.io&relation=delegate_permission/common.handle_all_urls
+```
+
+**Verification happens when the app is installed, not when it runs.** An app
+installed before the file went live keeps its address bar forever. Uninstall it
+and install the APK again.
+
 The fingerprint is derived from the keystore and is not secret. If you ever
 replace the keystore, this file must be updated to match, or every installed app
 falls back to showing the address bar.
