@@ -1,8 +1,9 @@
 name: Build Android APK
 
-# Manual only. The APK wraps the live site rather than bundling it, so it does
-# not need rebuilding when the site changes — only when the icon, name, or
-# start URL in twa-manifest.json does.
+# Manual only. The APK now carries the website inside it, so unlike the Trusted
+# Web Activity this replaced, a push to `main` does NOT update an installed
+# app - every UI change needs a new build and a reinstall. Supabase data is
+# still live either way.
 on:
   workflow_dispatch:
     inputs:
@@ -15,6 +16,13 @@ on:
 permissions:
   contents: write
 
+# The fingerprint of the release keystore. Not a secret - it is derived from the
+# certificate every installed copy already carries. Asserted after the build so
+# an unsigned or wrongly signed APK cannot reach a release, which would install
+# once and then refuse every later update.
+env:
+  EXPECTED_SHA256: 4A:8D:97:3C:4F:13:42:AD:C1:47:62:DF:54:A4:17:8D:52:BF:99:A4:CC:FA:4D:9B:70:49:0F:59:A7:C5:2B:26
+
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -26,60 +34,68 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: npm
 
-      # Bubblewrap drives Gradle, which needs a JDK and the Android SDK. Without
-      # both on disk it tries to download them interactively and hangs the run.
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Bubblewrap
-        run: npm install -g @bubblewrap/cli
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Point Bubblewrap at the runner's JDK and SDK
-        run: |
-          mkdir -p "$HOME/.bubblewrap"
-          printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' \
-            "$JAVA_HOME" "$ANDROID_SDK_ROOT" > "$HOME/.bubblewrap/config.json"
-
-      # Android refuses to install an update whose versionCode is not higher
-      # than the installed one, so tie it to the run number.
       - name: Stamp version
         id: version
         run: |
           node -e '
-            const fs = require("fs");
-            const m = JSON.parse(fs.readFileSync("twa-manifest.json", "utf8"));
-            const asked = process.env.VERSION_NAME;
-            // The version name becomes a git tag, so keep it to characters a
-            // tag can hold. A space or a slash here would fail much later,
-            // after the build has already been paid for.
-            if (asked && !/^[0-9A-Za-z._-]+$/.test(asked)) {
+            const asked = process.env.VERSION_NAME || "1.0.0";
+            // The version name becomes a git tag, so it is checked here rather
+            // than after a build has already been paid for.
+            if (!/^[0-9A-Za-z._-]+$/.test(asked)) {
               throw new Error(`Version name "${asked}" must be letters, digits, dot, dash or underscore.`);
             }
-            m.appVersionName = asked || m.appVersionName;
-            m.appVersionCode = Number(process.env.GITHUB_RUN_NUMBER);
-            fs.writeFileSync("twa-manifest.json", JSON.stringify(m, null, 2));
-            fs.appendFileSync(
+            const code = Number(process.env.GITHUB_RUN_NUMBER);
+            require("fs").appendFileSync(
               process.env.GITHUB_OUTPUT,
-              `name=${m.appVersionName}\ncode=${m.appVersionCode}\n`,
+              `name=${asked}\ncode=${code}\n`,
             );
-            console.log(`version ${m.appVersionName} (${m.appVersionCode})`);
+            console.log(`version ${asked} (${code})`);
           '
         env:
           VERSION_NAME: ${{ inputs.version_name }}
 
-      - name: Generate the Android project
-        run: bubblewrap update --manifest=./twa-manifest.json --skipVersionUpgrade
+      # CAPACITOR=1 switches the base path to / and drops the service worker.
+      # Without it the app looks for /EnglishOs/assets inside the APK, where
+      # nothing lives, and shows a blank screen.
+      - name: Build the web app
+        run: CAPACITOR=1 npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_AI_PROVIDER: ${{ vars.VITE_AI_PROVIDER || secrets.VITE_AI_PROVIDER || 'mock' }}
 
-      # Deliberately after the project generation: a run with no secrets still
-      # exercises the toolchain and Bubblewrap, which is where breakage lives,
-      # instead of stopping at the first missing value.
+      # These are baked into the bundle, so a build without them ships an app
+      # permanently stuck in offline demo mode with no way to sign in. Failing
+      # here is far kinder than shipping that.
+      - name: Check the app was built against Supabase
+        run: |
+          if ! grep -rqs 'supabase\.co' dist/assets; then
+            echo "::error::No Supabase URL in the bundle. Set the VITE_SUPABASE_URL and"
+            echo "::error::VITE_SUPABASE_ANON_KEY repository secrets, or this APK cannot sign in."
+            exit 1
+          fi
+          echo "Supabase credentials are in the bundle."
+
+      - name: Copy the web app into the Android project
+        run: npx cap sync android
+
+      # Deliberately after the sync: a run with no secrets still exercises the
+      # whole toolchain, which is where breakage lives, instead of stopping at
+      # the first missing value.
       - name: Restore signing keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -95,15 +111,13 @@ jobs:
           # Strip whitespace first: a value pasted through a browser can pick up
           # newlines, and base64 that is still a valid multiple of 4 decodes
           # happily into a truncated file.
-          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > android.keystore
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "${RUNNER_TEMP}/android.keystore"
 
-          size=$(stat -c%s android.keystore)
-          echo "decoded keystore: ${size} bytes"
+          size=$(stat -c%s "${RUNNER_TEMP}/android.keystore")
+          echo "decoded keystore: ${size} bytes (expected 2718)"
 
           # Prove the keystore opens before spending a Gradle build on it.
-          # Without this the failure surfaces ~50s later as a Java stack trace
-          # from apksigner, which says nothing about the actual cause.
-          if ! keytool -list -keystore android.keystore -storepass "$STOREPASS" >/dev/null 2>&1; then
+          if ! keytool -list -keystore "${RUNNER_TEMP}/android.keystore" -storepass "$STOREPASS" >/dev/null 2>&1; then
             echo "::error::The keystore did not open (decoded to ${size} bytes)."
             echo "::error::Two possible causes:"
             echo "::error::1. ANDROID_KEYSTORE_BASE64 is truncated. It is one very long"
@@ -115,28 +129,51 @@ jobs:
           echo "keystore opened successfully"
 
       - name: Build and sign
+        working-directory: android
         env:
-          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: bubblewrap build --skipPwaValidation
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/android.keystore
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: englishos
+          ANDROID_VERSION_NAME: ${{ steps.version.outputs.name }}
+          ANDROID_VERSION_CODE: ${{ steps.version.outputs.code }}
+        run: ./gradlew --no-daemon assembleRelease
 
-      - name: Show the signing fingerprint
+      - name: Check the APK is signed with the right key
         run: |
-          echo "This SHA-256 must match .well-known/assetlinks.json,"
-          echo "or the app opens with a browser address bar."
-          keytool -list -v -keystore android.keystore -alias englishos \
-            -storepass "$BUBBLEWRAP_KEYSTORE_PASSWORD" 2>/dev/null \
-            | grep -A1 'SHA256:' || true
-        env:
-          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          apk=android/app/build/outputs/apk/release/app-release.apk
+          apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          echo "using ${apksigner}"
+
+          got=$("$apksigner" verify --print-certs "$apk" \
+            | grep -m1 -i 'SHA-256 digest:' \
+            | sed 's/.*: *//' \
+            | tr -d ' ' | tr 'a-f' 'A-F')
+          want=$(printf '%s' "$EXPECTED_SHA256" | tr -d ':')
+
+          echo "signed by: ${got}"
+          if [ "$got" != "$want" ]; then
+            echo "::error::This APK is signed by a different key than the one in docs/ANDROID.md."
+            echo "::error::expected ${want}"
+            echo "::error::Android will refuse to install it over the app already on the phone."
+            echo "::error::If you replaced the keystore on purpose, update EXPECTED_SHA256 in this workflow."
+            exit 1
+          fi
+          echo "signature matches the expected key"
+
+      - name: Name the APK after the app
+        id: apk
+        run: |
+          name="EnglishOS-${{ steps.version.outputs.name }}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$name"
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+          echo "size: $(( $(stat -c%s "$name") / 1024 / 1024 )) MB"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: englishos-apk
-          path: |
-            app-release-signed.apk
-            app-release-bundle.aab
+          path: ${{ steps.apk.outputs.name }}
           if-no-files-found: error
           retention-days: 30
 
@@ -150,16 +187,13 @@ jobs:
           TAG: v${{ steps.version.outputs.name }}
           VERSION_NAME: ${{ steps.version.outputs.name }}
           VERSION_CODE: ${{ steps.version.outputs.code }}
+          APK: ${{ steps.apk.outputs.name }}
         run: |
-          # Name the download after the app. "app-release-signed.apk" says
-          # nothing once it is sitting in a phone's Downloads folder.
-          cp app-release-signed.apk "EnglishOS-${VERSION_NAME}.apk"
-
           {
-            printf 'Download **EnglishOS-%s.apk** below and open it on the phone.\n' "$VERSION_NAME"
+            printf 'Download **%s** below and open it on the phone.\n' "$APK"
             printf 'Android will ask you to allow installing from unknown sources - expected for an app that did not come from the Play Store.\n\n'
             printf -- '- Version `%s`, build `%s`\n' "$VERSION_NAME" "$VERSION_CODE"
-            printf -- '- The app opens the live site, so day-to-day updates arrive on their own. Reinstall only when the icon, name or start URL changes.\n'
+            printf -- '- The website is built into this APK. A change pushed to `main` reaches the app only in the next build, so install a new APK when you want new features.\n'
           } > release-notes.md
 
           # Re-running with a version name that has already shipped replaces
@@ -168,9 +202,9 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release ${TAG} already exists - replacing its APK."
             gh release edit "$TAG" --notes-file release-notes.md
-            gh release upload "$TAG" "EnglishOS-${VERSION_NAME}.apk" --clobber
+            gh release upload "$TAG" "$APK" --clobber
           else
-            gh release create "$TAG" "EnglishOS-${VERSION_NAME}.apk" \
+            gh release create "$TAG" "$APK" \
               --title "EnglishOS ${VERSION_NAME}" \
               --notes-file release-notes.md \
               --target "$GITHUB_SHA"
@@ -180,4 +214,4 @@ jobs:
 
       - name: Remove the keystore from the runner
         if: always()
-        run: rm -f android.keystore
+        run: rm -f "${RUNNER_TEMP}/android.keystore"

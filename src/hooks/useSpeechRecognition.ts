@@ -1,4 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Capacitor } from '@capacitor/core'
+import { useNativeSpeech } from './useNativeSpeech'
+import {
+  appendPhrase,
+  LONG_PAUSE_MS,
+  MIC_REFUSED,
+  type SpeechRecognitionState,
+} from './speechState'
+
+export type { SpeechRecognitionState }
 
 /*
  * Minimal local typings for the Web Speech API.
@@ -52,26 +62,22 @@ function getConstructor(): SpeechRecognitionConstructor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null
 }
 
-/** Chrome and Edge only. Safari and Firefox return false. */
-export const speechRecognitionSupported = getConstructor() !== null
+/**
+ * Which engine this build is talking to. Fixed for the life of the process -
+ * an app cannot stop being an app - so the hook below can be chosen once at
+ * module load instead of branching on every render.
+ */
+const IS_NATIVE = Capacitor.isNativePlatform()
 
-/** A gap longer than this between phrases counts as hesitation. */
-const LONG_PAUSE_MS = 2500
+/**
+ * In the browser: Chrome and Edge only, so Safari and Firefox are false.
+ * In the app: always true, because Android ships its own recogniser. Whether
+ * this particular phone actually has one is checked when listening starts,
+ * which is the first moment the answer is knowable.
+ */
+export const speechRecognitionSupported = IS_NATIVE || getConstructor() !== null
 
-export interface SpeechRecognitionState {
-  /** Everything confirmed so far. */
-  transcript: string
-  /** The phrase currently being spoken, not yet confirmed. */
-  interim: string
-  listening: boolean
-  longPauses: number
-  error: string | null
-  start: () => void
-  stop: () => void
-  reset: () => void
-}
-
-export function useSpeechRecognition(lang = 'en-US'): SpeechRecognitionState {
+function useWebSpeech(lang = 'en-US'): SpeechRecognitionState {
   const [transcript, setTranscript] = useState('')
   const [interim, setInterim] = useState('')
   const [listening, setListening] = useState(false)
@@ -110,7 +116,7 @@ export function useSpeechRecognition(lang = 'en-US'): SpeechRecognitionState {
         else interimChunk += text
       }
       if (finalChunk) {
-        setTranscript((prev) => (prev ? `${prev} ${finalChunk.trim()}` : finalChunk.trim()))
+        setTranscript((prev) => appendPhrase(prev, finalChunk))
       }
       setInterim(interimChunk)
     }
@@ -118,9 +124,7 @@ export function useSpeechRecognition(lang = 'en-US'): SpeechRecognitionState {
     recognition.onerror = (event) => {
       if (event.error === 'no-speech' || event.error === 'aborted') return
       setError(
-        event.error === 'not-allowed'
-          ? 'Microphone permission was refused. Allow it in your browser to use speaking practice.'
-          : `Speech recognition error: ${event.error}`,
+        event.error === 'not-allowed' ? MIC_REFUSED : `Speech recognition error: ${event.error}`,
       )
     }
 
@@ -186,3 +190,14 @@ export function useSpeechRecognition(lang = 'en-US'): SpeechRecognitionState {
 
   return { transcript, interim, listening, longPauses, error, start, stop, reset }
 }
+
+/**
+ * Speaking practice calls this and never learns which engine answered.
+ *
+ * Chosen once, at module load, so neither implementation is ever mounted and
+ * unmounted mid-session - swapping hooks between renders would throw away the
+ * transcript the learner is in the middle of dictating.
+ */
+export const useSpeechRecognition: (lang?: string) => SpeechRecognitionState = IS_NATIVE
+  ? useNativeSpeech
+  : useWebSpeech
