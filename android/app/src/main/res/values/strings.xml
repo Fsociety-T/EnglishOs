@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EnglishOS</string>
+    <string name="title_activity_main">EnglishOS</string>
+    <string name="package_name">io.github.fsociety_t.englishos</string>
+    <string name="custom_url_scheme">io.github.fsociety_t.englishos</string>
+</resources>
