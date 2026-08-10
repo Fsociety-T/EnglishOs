@@ -11,8 +11,9 @@ on:
         required: false
         default: '1.0.0'
 
+# `write` so the build can publish its own release. Nothing else here needs it.
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   apk:
@@ -49,13 +50,25 @@ jobs:
       # Android refuses to install an update whose versionCode is not higher
       # than the installed one, so tie it to the run number.
       - name: Stamp version
+        id: version
         run: |
           node -e '
             const fs = require("fs");
             const m = JSON.parse(fs.readFileSync("twa-manifest.json", "utf8"));
-            m.appVersionName = process.env.VERSION_NAME || m.appVersionName;
+            const asked = process.env.VERSION_NAME;
+            // The version name becomes a git tag, so keep it to characters a
+            // tag can hold. A space or a slash here would fail much later,
+            // after the build has already been paid for.
+            if (asked && !/^[0-9A-Za-z._-]+$/.test(asked)) {
+              throw new Error(`Version name "${asked}" must be letters, digits, dot, dash or underscore.`);
+            }
+            m.appVersionName = asked || m.appVersionName;
             m.appVersionCode = Number(process.env.GITHUB_RUN_NUMBER);
             fs.writeFileSync("twa-manifest.json", JSON.stringify(m, null, 2));
+            fs.appendFileSync(
+              process.env.GITHUB_OUTPUT,
+              `name=${m.appVersionName}\ncode=${m.appVersionCode}\n`,
+            );
             console.log(`version ${m.appVersionName} (${m.appVersionCode})`);
           '
         env:
@@ -126,6 +139,44 @@ jobs:
             app-release-bundle.aab
           if-no-files-found: error
           retention-days: 30
+
+      # An artifact expires after 30 days and can only be downloaded by someone
+      # signed in to GitHub, from a zip. A release is a permanent, plain link
+      # you can open on the phone itself - which is the only comfortable way to
+      # install a sideloaded APK.
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.version.outputs.name }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+        run: |
+          # Name the download after the app. "app-release-signed.apk" says
+          # nothing once it is sitting in a phone's Downloads folder.
+          cp app-release-signed.apk "EnglishOS-${VERSION_NAME}.apk"
+
+          {
+            printf 'Download **EnglishOS-%s.apk** below and open it on the phone.\n' "$VERSION_NAME"
+            printf 'Android will ask you to allow installing from unknown sources - expected for an app that did not come from the Play Store.\n\n'
+            printf -- '- Version `%s`, build `%s`\n' "$VERSION_NAME" "$VERSION_CODE"
+            printf -- '- The app opens the live site, so day-to-day updates arrive on their own. Reinstall only when the icon, name or start URL changes.\n'
+          } > release-notes.md
+
+          # Re-running with a version name that has already shipped replaces
+          # that release rather than failing, so a bad build can be corrected
+          # without inventing a version number nobody asked for.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists - replacing its APK."
+            gh release edit "$TAG" --notes-file release-notes.md
+            gh release upload "$TAG" "EnglishOS-${VERSION_NAME}.apk" --clobber
+          else
+            gh release create "$TAG" "EnglishOS-${VERSION_NAME}.apk" \
+              --title "EnglishOS ${VERSION_NAME}" \
+              --notes-file release-notes.md \
+              --target "$GITHUB_SHA"
+          fi
+
+          echo "Release: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
 
       - name: Remove the keystore from the runner
         if: always()
